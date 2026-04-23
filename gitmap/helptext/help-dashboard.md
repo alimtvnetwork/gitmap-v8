@@ -59,6 +59,9 @@ linked from older bookmarks:
 | `/merge-both` | `gitmap merge-both LEFT RIGHT` (alias `mb`) | spec/01-app/97-move-and-merge.md |
 | `/merge-left` | `gitmap merge-left LEFT RIGHT` (alias `ml`) | spec/01-app/97-move-and-merge.md |
 | `/merge-right` | `gitmap merge-right LEFT RIGHT` (alias `mr`) | spec/01-app/97-move-and-merge.md |
+| `/commit-right` | `gitmap commit-right LEFT RIGHT` (alias `cmr`) **LIVE** | spec/01-app/106-commit-left-right-both.md |
+| `/commit-left` | `gitmap commit-left LEFT RIGHT` (alias `cml`) *(scaffold)* | spec/01-app/106-commit-left-right-both.md |
+| `/commit-both` | `gitmap commit-both LEFT RIGHT` (alias `cmb`) *(scaffold)* | spec/01-app/106-commit-left-right-both.md |
 | `/as` | `gitmap as [name]` (alias `s-alias`) | helptext/as.md |
 | `/release-alias` | `gitmap release-alias <name> <ver>` (alias `ra`) | helptext/release-alias.md |
 | `/release-alias-pull` | `gitmap release-alias-pull <name> <ver>` (alias `rap`) | helptext/release-alias-pull.md |
@@ -71,6 +74,7 @@ The same pages render in the CLI via `gitmap help <command>`
 - docs — Open the hosted documentation website
 - dashboard — Generate an HTML analytics dashboard for a repo
 - mv / merge-both / merge-left / merge-right — Move & merge command family
+- commit-right / commit-left / commit-both (cmr / cml / cmb) — Commit-replay family (spec 106)
 - diff — Read-only preview before merge-both
 - as / release-alias / release-alias-pull — Register-and-release-anywhere workflow
 
