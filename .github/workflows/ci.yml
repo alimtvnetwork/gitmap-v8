@@ -86,6 +86,16 @@ jobs:
           go-version-file: gitmap/go.mod
           cache-dependency-path: gitmap/go.sum
 
+      - name: Check for duplicate function declarations
+        # Fast static guard that catches "X redeclared in this block"
+        # before `go vet` would. Honors filename _windows.go / _unix.go
+        # suffixes and //go:build directives so platform-specific
+        # implementations don't false-flag. Regression motivator:
+        # v3.76.1 expandHome shadow in cmd/.
+        if: needs.sha-check.outputs.already-built != 'true'
+        shell: bash
+        run: bash gitmap/scripts/check-duplicate-funcs.sh gitmap
+
       - name: Go vet
         if: needs.sha-check.outputs.already-built != 'true'
         working-directory: gitmap
