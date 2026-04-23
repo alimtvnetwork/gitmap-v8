@@ -736,6 +736,31 @@ function Copy-DataFolder {
     }
 }
 
+function Sync-DeployDataFolder {
+    param(
+        [string]$SourceDir,
+        [string]$DestDir
+    )
+
+    if (-not (Test-Path $SourceDir)) {
+        return
+    }
+
+    if (-not (Test-Path $DestDir)) {
+        Copy-Item $SourceDir $DestDir -Recurse
+        Write-Info "Copied data folder to gitmap app directory"
+        return
+    }
+
+    $files = Get-ChildItem -Path $SourceDir -File -ErrorAction SilentlyContinue
+    foreach ($file in $files) {
+        $targetFile = Join-Path $DestDir $file.Name
+        Copy-Item $file.FullName $targetFile -Force
+    }
+
+    Write-Info "Synced static data files to gitmap app directory"
+}
+
 # -- Copy docs-site to deploy directory -----------------------
 # Required for `gitmap help-dashboard` (hd) which resolves docs-site/
 # relative to the binary directory. Without this, `gitmap hd` fails with:
@@ -1016,13 +1041,7 @@ function Deploy-Binary {
     $binDir   = Split-Path $BinaryPath -Parent
     $dataDir  = Join-Path $binDir "data"
     $dataDest = Join-Path $appDir "data"
-    if (Test-Path $dataDir) {
-        if (Test-Path $dataDest) {
-            Remove-Item $dataDest -Recurse -Force
-        }
-        Copy-Item $dataDir $dataDest -Recurse
-        Write-Info "Copied data folder to gitmap app directory"
-    }
+    Sync-DeployDataFolder -SourceDir $dataDir -DestDir $dataDest
 
     Copy-DocsSite -AppDir $appDir
 
