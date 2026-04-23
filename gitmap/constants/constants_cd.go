@@ -45,7 +45,17 @@ const (
 )
 
 // CD shell wrapper functions — installed by setup/completion.
-const CDFuncMarker = "# gitmap shell wrapper v2"
+// Bump the version suffix whenever the wrapper bodies change so the
+// installer replaces the previous managed block instead of leaving stale
+// definitions in the user's profile.
+const (
+	CDFuncMarker    = "# gitmap shell wrapper v3"
+	CDFuncEndMarker = "# end gitmap shell wrapper"
+	// CDFuncMarkerPrefix matches every historical marker line so the
+	// installer can find and remove old managed blocks regardless of
+	// version suffix.
+	CDFuncMarkerPrefix = "# gitmap shell wrapper"
+)
 
 // CD shell wrapper env var — set by wrappers so the binary can detect them.
 const (
@@ -128,7 +138,7 @@ const CDFuncPowerShell = `function gcd {
     return
   }
   $env:GITMAP_WRAPPER = "1"
-  $dest = & $real cd @args
+  $dest = & "$real" cd @args
   if ($LASTEXITCODE -ne 0) {
     return
   }
@@ -138,13 +148,13 @@ const CDFuncPowerShell = `function gcd {
 }
 
 function Get-GitmapCommand {
-  $cmd = Get-Command gitmap.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($cmd) {
-    return $cmd.Source
+  $cmd = @(Get-Command gitmap.exe -CommandType Application -ErrorAction SilentlyContinue)
+  if ($cmd.Count -gt 0) {
+    return [string]$cmd[0].Source
   }
-  $cmd = Get-Command gitmap -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($cmd) {
-    return $cmd.Source
+  $cmd = @(Get-Command gitmap -CommandType Application -ErrorAction SilentlyContinue)
+  if ($cmd.Count -gt 0) {
+    return [string]$cmd[0].Source
   }
   return $null
 }
@@ -157,7 +167,7 @@ function gitmap {
   }
   if ($args.Count -gt 0 -and ($args[0] -eq 'cd' -or $args[0] -eq 'go')) {
     $env:GITMAP_WRAPPER = "1"
-    $dest = & $real @args
+    $dest = & "$real" @args
     if ($LASTEXITCODE -ne 0) {
       return
     }
@@ -166,11 +176,12 @@ function gitmap {
     }
     return
   }
-  & $real @args
+  & "$real" @args
 }`
 
 // CD function messages.
 const (
 	MsgCDFuncInstalled = "Installed 'gitmap'/'gcd' shell wrappers — restart your terminal or source your profile\n"
-	MsgCDFuncAlready   = "Shell wrappers for 'gitmap'/'gcd' already installed\n"
+	MsgCDFuncAlready   = "Shell wrappers for 'gitmap'/'gcd' already installed (current version)\n"
+	MsgCDFuncUpgraded  = "Upgraded 'gitmap'/'gcd' shell wrappers — restart your terminal or source your profile\n"
 )
