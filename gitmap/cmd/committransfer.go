@@ -102,34 +102,17 @@ func registerCommitTransferBools(fs *flag.FlagSet, opts *committransfer.Options)
 }
 
 // registerMessagePolicyToggles wires the on/off pairs for §6 stages.
+// Each negation is a Func that flips the field at parse time, so order
+// of flags on the command line is the order of effect (last wins).
 func registerMessagePolicyToggles(fs *flag.FlagSet, opts *committransfer.Options) {
-	var noConv, noProv, noDrop bool
-	fs.BoolVar(&noConv, constants.FlagCTNoConventional, false, constants.FlagDescCTNoConventional)
-	fs.BoolVar(&noProv, constants.FlagCTNoProvenance, false, constants.FlagDescCTNoProvenance)
-	fs.BoolVar(&noDrop, constants.FlagCTNoDrop, false, constants.FlagDescCTNoDrop)
 	fs.Func(constants.FlagCTConventional, constants.FlagDescCTConventional,
 		func(string) error { opts.Message.Conventional = true; return nil })
+	fs.Func(constants.FlagCTNoConventional, constants.FlagDescCTNoConventional,
+		func(string) error { opts.Message.Conventional = false; return nil })
 	fs.Func(constants.FlagCTProvenance, constants.FlagDescCTProvenance,
 		func(string) error { opts.Message.Provenance = true; return nil })
-	// The negations apply after parse — register a finalizer via fs.Func
-	// on a sentinel flag is overkill; the calling code reads noConv/noProv
-	// before returning. To keep that simple we inline the apply step here
-	// by attaching a defer-style closure to a dummy parsed callback.
-	fs.BoolVar(&opts.Yes, "yes-noop-anchor", opts.Yes, "")
-	applyNegations(opts, &noConv, &noProv, &noDrop)
-}
-
-// applyNegations is invoked once after fs.Parse via a deferred goroutine
-// alternative — but Go flag parsing is synchronous, so we expose this as
-// a follow-up call from parseCommitTransferArgs. Kept as a separate
-// function so the toggles registration stays under the line cap.
-func applyNegations(opts *committransfer.Options, noConv, noProv, noDrop *bool) {
-	// Hook: parseCommitTransferArgs invokes this AFTER fs.Parse via the
-	// closure indirection in registerCommitTransferStrings. See below.
-	_ = opts
-	_ = noConv
-	_ = noProv
-	_ = noDrop
+	fs.Func(constants.FlagCTNoProvenance, constants.FlagDescCTNoProvenance,
+		func(string) error { opts.Message.Provenance = false; return nil })
 }
 
 // registerCommitTransferStrings wires the value-taking flags + repeatable
