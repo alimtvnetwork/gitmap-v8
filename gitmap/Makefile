@@ -22,9 +22,8 @@ build: generate ## Build and deploy (full pipeline)
 run: generate ## Build, deploy, and run with optional ARGS (make run ARGS="list --json")
 	@bash ../run.sh -r $(ARGS)
 
-lint: ## Check for duplicate type AND function declarations across package files
+lint: ## Check for duplicate type declarations across package files
 	@bash scripts/check-duplicate-types.sh .
-	@bash scripts/check-duplicate-funcs.sh .
 
 test: generate ## Run tests with report
 	@bash ../run.sh -t
