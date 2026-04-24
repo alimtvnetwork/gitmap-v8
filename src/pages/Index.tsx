@@ -4,6 +4,7 @@ import { FolderGit2, GitBranch, RefreshCw, Eye } from "lucide-react";
 import DocsLayout from "@/components/docs/DocsLayout";
 import FeatureCard from "@/components/docs/FeatureCard";
 import InstallBlock from "@/components/docs/InstallBlock";
+import CommandBubbles from "@/components/docs/CommandBubbles";
 import { VERSION } from "@/constants/index";
 
 const INSTALL_TABS = [
@@ -63,14 +64,14 @@ const HomePage = () => {
 
             <div className="space-y-6">
               <div>
-                <p className="mb-3 text-left text-xs font-heading font-semibold uppercase tracking-[0.18em] text-primary">
+                <p className="mb-3 text-center text-xs font-heading font-semibold uppercase tracking-[0.18em] text-primary">
                   Install
                 </p>
                 <InstallBlock tabs={INSTALL_TABS} />
               </div>
 
               <div>
-                <p className="mb-3 text-left text-xs font-heading font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="mb-3 text-center text-xs font-heading font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Uninstall
                 </p>
                 <InstallBlock tabs={UNINSTALL_TABS} />
@@ -125,6 +126,8 @@ const HomePage = () => {
           description="Live-refresh dashboard showing dirty/clean status, ahead/behind counts, and stash entries across all tracked repos."
         />
       </section>
+
+      <CommandBubbles />
 
       <script
         type="application/ld+json"
