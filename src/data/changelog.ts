@@ -8,6 +8,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "v3.108.0",
+    date: "2026-04-24",
+    subtitle: "`gitmap templates diff` (alias `td`) — preview template changes without writing",
+    items: [
+      "Added `gitmap templates diff` (alias `td`) — pure, write-nothing preview of what `gitmap add ignore <lang>` / `gitmap add attributes <lang>` would change. Marker-block aware: only the region between the gitmap-managed `BEGIN`/`END` markers is compared, so edits outside the block never trigger a false positive.",
+      "Status enum drives behavior and exit codes (mirrors `diff(1)`): `DiffNoChange` → exit 0, `DiffMissingFile` / `DiffMissingBlock` / `DiffBlockChanged` → exit 1, hard errors (bad lang, unreadable tree) → exit 2. This makes the command pre-commit-hook safe: `gitmap templates diff --lang go || gitmap add ignore go`.",
+      "Implementation reuses `blockRegex(tag)` from the existing `merge.go` writer, so the diff parser cannot drift from the writer. Hand-rolled removal-then-addition hunks keep the dependency surface zero — no Myers diff, no external diff lib. TTY-aware coloring via the existing pretty renderer (cyan `+`, yellow `-`, dim `@@`); plain output when stdout is not a terminal.",
+      "Flags: `--lang <name>` (limit to one language, default = every resolvable lang), `--kind ignore|attributes` (default = both), `--cwd <path>` (run against a different working tree). Five unit tests in `gitmap/templates/diff_test.go` pin all four status branches plus blank-line preservation.",
+      "Plan 05 Phase 0 (spec) and Phase 3 (diff) now complete — see `spec/01-app/110-templates-polish.md` for the canonical contract covering expanded language coverage, `templates init`, and `templates diff`. Phases 1, 2, and 4 (more langs, `init` scaffolder, README + smoke matrix) remain.",
+      "Bumped `constants.Version` to `3.108.0`. New helptext at `gitmap/helptext/templates-diff.md` with the full exit-code table and pre-commit example.",
+    ],
+  },
+  {
+    version: "v3.107.0",
+    date: "2026-04-24",
+    subtitle: "Pretty markdown renderer fixture corpus extended (cases 007-009)",
+    items: [
+      "Extended `gitmap/render/testdata/pretty/` with three new golden-file cases (`007` headings without subtitles, `008` back-to-back collapsible blocks, `009` blank-line preservation) so the renderer's remaining parser branches are pinned by byte-equality before the next round of helptext additions.",
+      "No behavioral change — pure regression coverage. Bumped `constants.Version` to `3.107.0`.",
+    ],
+  },
+  {
     version: "v3.95.0",
     date: "2026-04-24",
     subtitle: "Refuse to build URL-shaped folder paths + lock multi-URL routing behind regression tests",
