@@ -33,3 +33,8 @@ const (
 // runtime falls back to os.Exit(1) after printing this — partial output
 // would be misleading in audit mode.
 const ErrCloneAuditLoad = "clone --audit: could not load %q: %v\n"
+
+// ErrCloneAuditDirectURL is printed when the user combines `--audit` with
+// a direct git URL. Audit only makes sense against a manifest file
+// because it needs a list of records to validate.
+const ErrCloneAuditDirectURL = "clone --audit: requires a manifest file (json|csv|text|path), not a direct git URL\n"
