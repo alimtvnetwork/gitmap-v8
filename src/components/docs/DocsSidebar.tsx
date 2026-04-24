@@ -58,6 +58,7 @@ const navItems = [
   { title: "clone-next (cmd)", url: "/clone-next-command", icon: GitBranch },
   { title: "scan/clone flags", url: "/scan-clone-flags", icon: Flag },
   { title: "Getting Started", url: "/getting-started", icon: Rocket },
+  { title: "Install / Update gitmap", url: "/install-gitmap", icon: Download },
   { title: "Configuration", url: "/config", icon: Settings },
   { title: "Architecture", url: "/architecture", icon: Boxes },
   { title: "Watch", url: "/watch", icon: Monitor },
