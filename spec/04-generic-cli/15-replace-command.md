@@ -127,11 +127,33 @@ Open each candidate file, read up to the first 8192 bytes. If any byte
 is `0x00`, treat as binary and skip. This is the same heuristic git
 uses and matches the user's "any text file" intent.
 
-### 5.4 No extension allow-list
+### 5.4 Optional extension allow-list (`--ext`)
 
-Any file that survives the directory exclusion AND the null-byte scan
-is eligible. This is intentional — the user explicitly said "any text
-file."
+By default, every file that survives §5.1–5.3 is eligible — there is no
+extension whitelist. When the user passes `--ext`, the walker
+additionally requires `filepath.Ext(path)` (lowercased) to appear in
+the supplied list before the file is considered.
+
+Normalization rules for `--ext` values:
+
+- Split on `,`.
+- Trim ASCII whitespace from each piece.
+- Lowercase each piece.
+- Prepend `.` when the first byte is not already `.`.
+- Drop empty pieces and the lone string `"."`.
+- Deduplicate while preserving first-seen order.
+
+Examples:
+
+| Input             | Normalized       |
+|-------------------|------------------|
+| `.go,.md`         | `[.go .md]`      |
+| `go,MD`           | `[.go .md]`      |
+| `  .go , md ,go ` | `[.go .md]`      |
+| `""` (omitted)    | `nil` (no filter) |
+
+Files with no extension never match a non-empty `--ext`. Binary
+detection (§5.3) still runs on filtered-in files.
 
 ---
 
