@@ -77,36 +77,64 @@ def main() -> int:
         log("no baseline yet — skipping issue summary (seeding mode)")
         return 0
 
-    if not new_findings:
-        log("no NEW findings — issues file untouched")
-        return 0
-
-    fingerprint = compute_fingerprint(new_findings)
+    fingerprint = compute_fingerprint(new_findings) if new_findings else ""
     issues_path = args.issues_file
-
     existing_text = read_text_or_empty(issues_path)
-    if fingerprint and f"{ENTRY_MARKER} {fingerprint} -->" in existing_text:
-        log(f"entry with fingerprint {fingerprint} already present — skipping")
+
+    # Auto-resolve any prior open CI-lint entries whose fingerprint is
+    # NOT in the current NEW set. Runs even when there are no NEW
+    # findings, so a clean run can close out previously-tracked entries.
+    active_fingerprints = {fingerprint} if fingerprint else set()
+    resolved_text, resolved_count = mark_resolved_entries(
+        existing_text, active_fingerprints, sha=args.sha,
+        run_url=args.run_url)
+
+    duplicate_entry = bool(fingerprint) and \
+        f"{ENTRY_MARKER} {fingerprint} -->" in existing_text
+
+    if not new_findings and resolved_count == 0:
+        log("no NEW findings, no stale entries — issues file untouched")
         return 0
 
-    next_number = next_issue_number(existing_text)
-    entry = render_entry(
-        number=next_number,
-        findings=new_findings,
-        fingerprint=fingerprint,
-        run_url=args.run_url,
-        sha=args.sha,
-    )
+    if duplicate_entry:
+        log(f"entry with fingerprint {fingerprint} already present — "
+            f"skipping append (auto-resolve: {resolved_count})")
+
+    entry = ""
+    next_number = next_issue_number(resolved_text)
+    if new_findings and not duplicate_entry:
+        entry = render_entry(
+            number=next_number,
+            findings=new_findings,
+            fingerprint=fingerprint,
+            run_url=args.run_url,
+            sha=args.sha,
+        )
+
+    preview_text = build_preview(resolved_text, entry)
 
     if args.out_preview:
-        write_text(args.out_preview, entry)
-        log(f"wrote preview entry to {args.out_preview} "
-            f"({len(new_findings)} NEW findings, fingerprint={fingerprint})")
+        write_text(args.out_preview, preview_text)
+        log(f"wrote preview to {args.out_preview} "
+            f"(new_findings={len(new_findings)}, "
+            f"fingerprint={fingerprint or 'n/a'}, "
+            f"auto_resolved={resolved_count})")
 
     if args.apply:
-        appended = append_entry(existing_text, entry)
-        write_text(issues_path, appended)
-        log(f"appended issue #{next_number:02d} to {issues_path}")
+        final_text = resolved_text
+        if entry:
+            final_text = append_entry(final_text, entry)
+        if final_text != existing_text:
+            write_text(issues_path, final_text)
+            applied = []
+            if entry:
+                applied.append(f"appended #{next_number:02d}")
+            if resolved_count:
+                applied.append(f"auto-resolved {resolved_count} entr"
+                               f"{'y' if resolved_count == 1 else 'ies'}")
+            log(f"updated {issues_path}: " + ", ".join(applied))
+        else:
+            log("apply: nothing changed (file already up to date)")
     else:
         log("dry-run: issues file not modified "
             "(pass --apply to write in place)")
