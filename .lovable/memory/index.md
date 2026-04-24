@@ -36,6 +36,7 @@ Clone parallel + hierarchy (v3.101.0+): `gitmap clone --max-concurrency N` opt-i
 - [Clone Direct URL](mem://features/clone-direct-url) — gitmap clone accepts direct HTTPS/SSH URLs with optional folder name, auto-flattens versioned URLs
 - [Clone Audit](mem://features/clone-audit) — `gitmap clone --audit <manifest>` plans+prints diff-style report (+/~/=/?/!) without invoking git (v3.99.0)
 - [Cross-Platform Install/Update](mem://features/cross-platform-install-update) — Canonical Win/macOS/Linux install · update · uninstall · verify matrix at spec/01-app/108-cross-platform-install-update.md, mirrored at /install-gitmap (v3.100.0)
+- [Clone Parallel + Hierarchy](mem://features/clone-parallel-hierarchy) — `gitmap clone --max-concurrency N` opt-in worker pool, hierarchy preserved at any N, thread-safe Progress + CloneCache (v3.101.0)
 - [Move & Merge Commands](mem://features/movemerge) — gitmap mv / merge-both / merge-left / merge-right with L/R/S/A/B/Q prompt + --prefer-* bypass + URL-side commit/push (v2.96.0)
 - [Release Alias](mem://features/release-alias) — gitmap as / release-alias (ra) / release-alias-pull (rap) with auto-stash labeled by alias-version-unixts, label-match pop for concurrent safety (v3.0.0)
 - [Self Install Uninstall](mem://features/self-install-uninstall) — gitmap self-install / self-uninstall manage the binary itself (separate from third-party install/uninstall). Embedded scripts via go:embed, Windows handoff, marker-block PATH cleanup
