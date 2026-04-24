@@ -31,6 +31,7 @@ func runCDLookup(name string, args []string) {
 
 	path := resolveCDPath(name, records, pick)
 	fmt.Print(path)
+	WriteShellHandoff(path)
 	warnIfNoWrapper()
 }
 
