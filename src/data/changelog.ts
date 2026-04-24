@@ -8,6 +8,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "v3.113.0",
+    date: "2026-04-24",
+    subtitle: "Centralize `fileExists` / `fileExistsLoose` / `dirExists` into a shared `gitmap/fsutil` package",
+    items: [
+      "Motivation: the redeclaration footgun that bit the `cmd` package twice (v3.92.0 rename, v3.112.0 stale-CI guard) only existed because two files in the same Go package defined unexported existence helpers with overlapping names. Pinning the rename via a test prevents accidental reverts but does not remove the underlying class of bug — any third file in `cmd` declaring `fileExists` would re-trigger it.",
+      "New package `gitmap/fsutil` (`gitmap/fsutil/exists.go`) exports three predicates with explicitly documented contracts: `FileExists` (strict file, rejects directories), `FileOrDirExists` (loose existence, accepts directories — replaces the prior `fileExistsLoose`), and `DirExists` (strict directory, rejects files). All three short-circuit on the empty string so callers don't need to guard their inputs.",
+      "Contract-pinning tests in `gitmap/fsutil/exists_test.go` exercise every variant against a real tempdir, file, missing path, and the empty string. Collapsing two variants now fails a test before it fails a downstream caller.",
+      "`gitmap/cmd/updaterepo.go` — removed local `dirExists` and `fileExists`, calls `fsutil.DirExists` / `fsutil.FileExists` instead. `gitmap/cmd/updatedebugwindows.go` — removed local `fileExistsLoose`, calls `fsutil.FileOrDirExists` instead.",
+      "`gitmap/cmd/updatedebugwindows_rename_test.go` — repurposed from the v3.112.0 rename pin into a forward-looking guard. The new `TestFsutilMigrationPinned` asserts the cmd package uses `fsutil.*` and exercises both the loose-empty short-circuit and the strict-dir rejection. A contributor reintroducing a local helper would trigger the redeclaration error this test was created to prevent.",
+      "Scope: only the `cmd` package is migrated in this release because that is where the redeclaration risk has materialized. The duplicated helpers in `gitmap/release`, `gitmap/lockfile`, `gitmap/localdirs`, `gitmap/vscodepm`, and `gitmap/detector` are functionally fine (different packages = different namespaces) and can migrate to `fsutil` opportunistically.",
+      "Bumped `constants.Version` to `3.113.0`.",
+    ],
+  },
+  {
     version: "v3.112.0",
     date: "2026-04-24",
     subtitle: "Pin the `fileExists` / `fileExistsLoose` rename so the v3.92.0 redeclaration cannot regress",
