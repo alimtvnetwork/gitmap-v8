@@ -118,6 +118,13 @@ jobs:
     name: Lint Baseline Diff
     runs-on: ubuntu-latest
     needs: sha-check
+    # `contents: write` is required by the "Commit appended issue entry
+    # (main only)" step which pushes the auto-generated pending-issues
+    # entry back to the repo. The push is gated to main + push events
+    # only; PR runs keep the workflow-default read-only token.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Already validated
         if: needs.sha-check.outputs.already-built == 'true'
