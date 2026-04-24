@@ -266,6 +266,12 @@ func executeDirectClone(url, folderName string, ghDesktopFlag, noReplace bool) {
 	// GitHub Desktop registration (auto-register by default for direct URL).
 	registerSingleDesktop(repoName, absPath)
 
+	// Shell handoff: cd the parent shell into the freshly cloned folder
+	// when invoked via the wrapper function (mirrors `cn` and `cd`).
+	// Only fires for the single-repo direct-URL path — runCloneMulti
+	// deliberately skips handoff because the destination is ambiguous.
+	WriteShellHandoff(absPath)
+
 	// Open in VS Code if available.
 	openInVSCode(absPath)
 
