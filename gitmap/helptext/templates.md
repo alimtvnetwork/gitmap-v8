@@ -12,8 +12,19 @@ tpl
 
 | Subcommand | Alias | Purpose |
 |------------|-------|---------|
-| `templates list` | `tl` | Print every available template with its KIND, LANG, SOURCE, and PATH |
+| `templates list [--kind] [--lang]` | `tl` | Print every available template with KIND, LANG, SOURCE, PATH |
 | `templates show <kind> <lang>` | `ts` | Write a single resolved template (overlay > embed) to stdout |
+| `templates init <lang>...` | `ti` | Scaffold `.gitignore` / `.gitattributes` for one or more languages |
+
+## Flags (list)
+
+| Flag | Description |
+|------|-------------|
+| `--kind <ignore\|attributes\|lfs>` | Narrow output to one kind. Unknown values exit 1. |
+| `--lang <name>` | Narrow output to one language across every kind. Case-insensitive. |
+
+Flags AND together — `--kind ignore --lang go` returns at most one row
+(`ignore/go`), not the union of every ignore row and every go row.
 
 ## Kinds
 
