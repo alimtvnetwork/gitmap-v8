@@ -174,6 +174,25 @@
   - `gitmap/cmd/root.go` — `shouldRewriteToClone` / `looksLikeURLToken` / `looksLikeFlag` helpers; argv scan instead of `os.Args[1]` only; URL-aware unknown-command branch
   - `gitmap/constants/constants_messages.go` — new `ErrUnknownCommandURLHint` constant
   - `gitmap/constants/constants.go` — version bumped to `3.84.0`
+
+## 12 — Phase 3 `update-cleanup` Child Failures Were Not Logged Durably (FIXED v3.93.0)
+- **Status**: Fixed in v3.93.0
+- **Reported**: User repeatedly hit the same `update-cleanup` failure after the deployed-binary handoff and reported that there were still "no logs" even after earlier cleanup/handoff fixes.
+- **Root Cause**:
+  1. The Phase 3 deployed-binary handoff itself was already working at the outer lifecycle level: the code logged `resolve`, `start_ok`, `inline`, and `done` transitions.
+  2. The missing evidence was **inside the detached cleanup child**. Several inner cleanup branches still wrote only to child stderr: `filepath.Glob` failures, `os.Remove` retry exhaustion, drive-root shim skip/remove branches, and `*.gitmap-tmp-*` swap-dir cleanup failures.
+  3. On Windows that child is launched hidden/detached, so those stderr-only lines were exactly the diagnostics most likely to be lost. The user saw the handoff start but had no durable branch-level record of *which actual cleanup operation* failed.
+- **Solution**:
+  1. `gitmap/cmd/updatecleanup_remove.go` now mirrors `glob_error`, per-attempt `remove_retry`, final `remove_fail`, and `remove_ok` into the always-on handoff log and the optional `--debug-windows-json` sink.
+  2. `gitmap/cmd/updatecleanup_extra.go` now mirrors the special-case cleanup branches too: `drive_root_skip`, `drive_root_remove_fail` / `drive_root_remove_ok`, `swap_glob_error`, and `swap_remove_fail` / `swap_remove_ok`.
+  3. Added automated tests for stable handoff-log formatting and cleanup-child env/argv forwarding.
+  4. Wrote RCA report `spec/02-app-issues/31-update-cleanup-phase3-observability-gap.md` so future work does not regress the diagnosis.
+- **Files Affected**:
+  - `gitmap/cmd/updatecleanup_remove.go`
+  - `gitmap/cmd/updatecleanup_extra.go`
+  - `gitmap/cmd/updatecleanup_handoff_test.go` (new)
+  - `spec/02-app-issues/31-update-cleanup-phase3-observability-gap.md` (new)
+  - `gitmap/constants/constants.go` — version bumped to `3.93.0`
 - **Why It "Repeated"**: The fix had been in source since v3.81.0 but the deployed binary on the user's machine was older because phase-3 cleanup was crashing every update (issues #09/#10). Verified independently here: `gitmap version` on the user's terminal would have shown <3.81.0. Once #09/#10 land and the user re-runs `gitmap update` successfully, the new binary reaches PATH and this error disappears even *without* this patch — but #11 also makes the shortcut more robust AND gives a self-explanatory error if it ever surfaces again on a stale binary.
 - **Prevention**:
   1. URL-rewrite shortcuts must scan the **full positional list**, not just `os.Args[1]`, so leading flags don't defeat them.
