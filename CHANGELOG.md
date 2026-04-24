@@ -1,5 +1,40 @@
 # Changelog
 
+## v3.107.0 — (2026-04-24) — Pretty renderer fixture corpus expansion
+
+### Added
+
+- 3 new edge-case fixtures in `gitmap/render/testdata/pretty/`:
+  - **`case-007-heading-without-subtitle`** — heading directly followed by
+    a plain paragraph (no italic line). Pins the subtitle-peek's
+    "no italic = treat as paragraph" branch so a future regression that
+    eats the line as a subtitle would fail loudly.
+  - **`case-008-consecutive-collapses`** — two paragraph + identical-fence
+    pairs back-to-back. Pins that `appendFence` rewrites the *previous*
+    paragraph each time and that the rewritten block keeps the standard
+    body indent (`  [Y]→ ...[/Y]`).
+  - **`case-009-blank-line-preservation`** — heading + 3 paragraphs with
+    blank lines between. Pins that `bkBlank` blocks survive the round
+    trip (no blank-collapsing) so help text doesn't lose its visual
+    breathing room.
+- All three pairs are picked up automatically by the existing
+  `TestPrettyFixtures` table-driven loop — no test code changes needed.
+
+### Notes
+
+- Phase 5 of the Templates plan was already shipped (renderer +
+  table-driven test + 6 fixtures + ANSI-swap + defensive-close tests).
+  This release rounds the corpus to 9 cases covering the three remaining
+  uncovered branches in `pretty_parse.go` / `pretty_emit.go`.
+
+### Files
+
+- New: `gitmap/render/testdata/pretty/case-007-heading-without-subtitle.{in.md,want.txt}`,
+  `case-008-consecutive-collapses.{in.md,want.txt}`,
+  `case-009-blank-line-preservation.{in.md,want.txt}`
+- Edited: `gitmap/constants/constants.go` (v3.107.0), `CHANGELOG.md`,
+  `.lovable/memory/index.md`
+
 ## v3.106.0 — (2026-04-24) — `templates list` --kind / --lang filters
 
 ### Added
