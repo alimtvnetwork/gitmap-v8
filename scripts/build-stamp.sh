@@ -113,8 +113,10 @@ detect_redecl_risk() {
     return
   fi
   local repo_has debug_has
-  repo_has="$(grep -cE '^func (fileExists|fileExistsLoose)\(' "$UPDATEREPO_FILE" 2>/dev/null || echo 0)"
-  debug_has="$(grep -cE '^func (fileExists|fileExistsLoose)\(' "$UPDATEDEBUG_FILE" 2>/dev/null || echo 0)"
+  repo_has="$(grep -cE '^func (fileExists|fileExistsLoose)\(' "$UPDATEREPO_FILE" 2>/dev/null | head -1)"
+  debug_has="$(grep -cE '^func (fileExists|fileExistsLoose)\(' "$UPDATEDEBUG_FILE" 2>/dev/null | head -1)"
+  repo_has="${repo_has:-0}"
+  debug_has="${debug_has:-0}"
 
   if [ "$repo_has" -gt 0 ] && [ "$debug_has" -gt 0 ]; then
     echo "  redecl-risk-check       ⚠ FAIL — fileExists/fileExistsLoose declared in both files"
