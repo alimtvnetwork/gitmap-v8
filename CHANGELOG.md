@@ -1,5 +1,53 @@
 # Changelog
 
+## v3.91.0 — (2026-04-24) — `--debug-windows` shows the exact spawn command and cleanup plan
+
+### Added
+
+- **`dumpDebugWindowsCommandPlan`** — when `--debug-windows` (or `GITMAP_DEBUG_WINDOWS=1`) is active, the Phase 3 handoff prints the exact shell-quoted spawn invocation BEFORE calling `cmd.Start()`/`cmd.Run()`. Output is copy-paste safe across PowerShell, cmd.exe, bash, and zsh:
+
+      [debug-windows] spawn command    : "C:\Program Files\gitmap-cli\gitmap.exe" "update-cleanup" "--debug-windows"
+      [debug-windows] (no `git` subprocess is launched by update-cleanup; only the line above plus os.Remove/os.RemoveAll on the paths below)
+
+- **`dumpDebugWindowsCleanupPlan`** — called from `runUpdateCleanup` AFTER `loadUpdateCleanupContext` but BEFORE any deletion happens, so the user sees the *plan* not the outcome. Enumerates:
+  1. Each `filepath.Glob` pattern for `gitmap-update-*` (temp handoff copies)
+  2. Each `filepath.Glob` pattern for `*.old` (backup binaries)
+  3. Each match that will be passed to `os.Remove` (skips matches equal to the active binary, mirroring `removeCleanupMatch`'s gating)
+  4. Each `*.gitmap-tmp-*` swap dir that will be passed to `os.RemoveAll`
+  5. The Windows-only drive-root shim candidate plus the verdict (`will os.Remove` / `skipped`) — mirrors the gating in `isRemovableDriveRootShim`
+
+  Sample output:
+
+      [debug-windows] ----- planned cleanup operations -----
+      [debug-windows] glob             : C:\Users\me\AppData\Local\Temp\gitmap-update-*
+      [debug-windows]   → os.Remove    : C:\Users\me\AppData\Local\Temp\gitmap-update-12345.exe
+      [debug-windows] glob             : C:\Program Files\gitmap-cli\*.old
+      [debug-windows]   → os.Remove    : C:\Program Files\gitmap-cli\gitmap.exe.old
+      [debug-windows] glob             : C:\Program Files\gitmap-cli\*.gitmap-tmp-*
+      [debug-windows]   (no matches)
+      [debug-windows] drive-root shim  : E:\gitmap.exe (skipped)
+      [debug-windows] --------------------------------------
+
+- **Explicit "no `git` subprocess" callout.** The cleanup pipeline is pure Go syscalls — it never shells out to `git`. The new `MsgDebugWinCmdNote` line states this explicitly so users debugging update issues don't waste time hunting for a phantom `git` invocation.
+
+### Why
+
+After v3.86 added `--debug-windows` and v3.87 added the on-disk handoff log, the missing piece was *what exactly* the deployed binary was about to do. The dump showed PIDs, env vars, and a Go-formatted argv slice (`[update-cleanup --debug-windows]`) but no shell-quoted command line and no list of the actual files that would be deleted. Users hit "the update finished but my .old file is still there" and had no way to confirm the path the cleanup pass actually looked at.
+
+### Implementation
+
+- `gitmap/cmd/updatedebugwindows_plan.go` (new) — `dumpDebugWindowsCommandPlan`, `renderShellCommand`, `quoteShellToken`, `dumpDebugWindowsCleanupPlan`, `dumpPlannedRemovals`, `dumpPlannedSwapDirs`, `dumpPlannedDriveRootShim`. All under 15 lines per function, file under 200 lines.
+- `gitmap/cmd/updatehandoff_phase3.go` — `spawnDeployedCleanupWindows` and `spawnDeployedCleanupUnix` both call `dumpDebugWindowsCommandPlan` immediately after `dumpDebugWindowsHandoff`.
+- `gitmap/cmd/updatecleanup.go` — `runUpdateCleanup` calls `dumpDebugWindowsCleanupPlan(ctx)` immediately after `loadUpdateCleanupContext`.
+- `gitmap/constants/constants_update.go` — new `MsgDebugWinCmdLine`, `MsgDebugWinCmdNote`, `MsgDebugWinCleanHdr`, `MsgDebugWinCleanGlob`, `MsgDebugWinCleanMatch`, `MsgDebugWinCleanEmpty`, `MsgDebugWinCleanSwap`, `MsgDebugWinCleanShim`, `MsgDebugWinCleanShimSkip`, `MsgDebugWinCleanShimDel`, `MsgDebugWinCleanFooter`.
+- `gitmap/cmd/startupversioncheck.go` — added `update:cleanup-plan-dump` → `3.91.0` to `cmdMinVersions`.
+- `gitmap/constants/constants.go` — bumped `Version` to `3.91.0`.
+
+### Compatibility
+
+Pure addition gated behind `--debug-windows` / `GITMAP_DEBUG_WINDOWS=1`. Default invocations are byte-for-byte identical to v3.90.0. The pre-flight glob scan is read-only and runs in microseconds — even with the debug flag on, it does not perceptibly slow cleanup.
+
+
 ## v3.89.0 — (2026-04-24) — Robust multi-URL clone parsing (PowerShell + bash)
 
 ### Added
