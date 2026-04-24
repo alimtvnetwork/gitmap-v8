@@ -60,3 +60,22 @@ const (
 	ExitCloneMultiAllInvalid  = 3
 )
 
+// Stale-binary detection — fired when executeDirectClone is called with a
+// folder name that itself parses as a URL. That shape is impossible in
+// current source (multi-URL routing in runClone catches it), so when it
+// happens it almost always means the user is running a deployed binary
+// that pre-dates v3.80.0's multi-URL fix. We refuse to build the broken
+// `D:\...\https:\github.com\...` path and tell the user exactly why.
+const ErrCloneStaleBinaryFolderURL = "" +
+	"  ✗ Refusing to clone: the folder name resolved to a URL (%q).\n" +
+	"    This means your installed gitmap binary is older than v3.80.0\n" +
+	"    (current source: v%s). The multi-URL clone fix is not present\n" +
+	"    in the binary on your PATH.\n\n" +
+	"    To fix:\n" +
+	"      1. gitmap doctor                # confirm the active binary version\n" +
+	"      2. gitmap update                # rebuild + redeploy from current source\n" +
+	"      3. open a NEW terminal so PATH refreshes\n" +
+	"      4. gitmap pending clear --yes   # drop any orphaned pending rows\n" +
+	"      5. retry the clone — `gitmap clone <url1> <url2>` works either\n" +
+	"         space-separated or comma-separated in PowerShell and bash.\n"
+
