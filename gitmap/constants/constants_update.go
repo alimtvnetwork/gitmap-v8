@@ -336,10 +336,11 @@ if ($activeBinary -and (Test-Path $activeBinary)) {
 # release until our process tree winds down.
 #
 # Cleanup is handled exactly once by Phase 3 (scheduleDeployedCleanupHandoff
-# in gitmap/cmd/updatehandoff_phase3.go), which spawns a detached
-# cmd.exe that waits ~2s — long enough for the handoff copy to exit
-# and Windows to release every file lock — and THEN runs
-# "<deployed> update-cleanup". That path always succeeds. See
+# in gitmap/cmd/updatehandoff_phase3.go), which resolves the deployed binary
+# from powershell.json first (sibling/path fallback only if needed), then
+# launches "<deployed> update-cleanup" directly in a hidden process with a
+# short delay. That avoids brittle cmd.exe quoting AND avoids stale PATH
+# binaries hijacking cleanup on machines with duplicate installs. See
 # spec/08-generic-update/06-cleanup.md.
 
 Write-Host ""
