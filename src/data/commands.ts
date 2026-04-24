@@ -1163,6 +1163,25 @@ export const commands: CommandDef[] = [
   },
   {
     category: "tools",
+    name: "templates diff", alias: "tpl td", description: "Preview what `add ignore`/`add attributes` would change without writing — marker-block aware, exit codes mirror diff(1)",
+    usage: "gitmap templates diff [--lang <name>] [--kind ignore|attributes] [--cwd <path>]",
+    flags: [
+      { flag: "--lang <name>", description: "Limit to one language (default: every resolvable lang)" },
+      { flag: "--kind ignore|attributes", description: "Limit to one kind (default: both)" },
+      { flag: "--cwd <path>", description: "Run against a different working tree" },
+    ],
+    examples: [
+      { command: "gitmap templates diff --lang go", description: "Show what would change for the Go .gitignore + .gitattributes blocks" },
+      { command: "gitmap tpl td --kind ignore --lang python", description: "Compare only the Python .gitignore block" },
+      { command: "gitmap templates diff --lang java || gitmap add ignore java", description: "Pre-commit pattern: only run `add` when diff reports drift (exit 1)" },
+    ],
+    seeAlso: [
+      { name: "templates show", description: "Print the curated bytes you would be diffing against" },
+      { name: "add ignore", description: "Apply an ignore template into the marker-block region" },
+    ],
+  },
+  {
+    category: "tools",
     name: "setup", alias: undefined, description: "Configure Git global settings and install shell tab-completion scripts",
     usage: "gitmap setup [--config <path>] [--dry-run]",
     flags: [
