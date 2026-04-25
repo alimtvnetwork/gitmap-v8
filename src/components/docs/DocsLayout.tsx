@@ -1,21 +1,17 @@
-import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import CommandPalette from "@/components/docs/CommandPalette";
 import { VERSION } from "@/constants/index";
-import { getCurrentTheme, setTheme } from "@/lib/theme";
+import { useTheme } from "@/hooks/useTheme";
 
 interface DocsLayoutProps {
   children: React.ReactNode;
 }
 
 const DocsLayout = ({ children }: DocsLayoutProps) => {
-  const [dark, setDark] = useState(() => getCurrentTheme() === "dark");
-
-  useEffect(() => {
-    setTheme(dark ? "dark" : "light");
-  }, [dark]);
+  const { isDark, setTheme } = useTheme();
+  const dark = isDark;
 
   return (
     <SidebarProvider>
