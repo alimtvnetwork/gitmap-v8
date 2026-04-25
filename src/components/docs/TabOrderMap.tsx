@@ -181,14 +181,22 @@ const TabOrderMap = () => {
   const refresh = useCallback(() => {
     const els = getTabOrder(document.body);
     elementsRef.current = els;
-    const list: FocusEntry[] = els.map((el, idx) => ({
-      step: idx + 1,
-      label: labelFor(el),
-      tag: el.tagName.toLowerCase(),
-      tabIndex: Number(el.getAttribute("tabindex") ?? "0"),
-      section: sectionFor(el),
-      isSelf: !!selfRef.current && selfRef.current.contains(el),
-    }));
+    const list: FocusEntry[] = els.map((el, idx) => {
+      const label = labelFor(el);
+      const desc = descriptionFor(el);
+      // Skip sublabel if it duplicates the name (case/whitespace insensitive).
+      const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+      const sublabel = desc && norm(desc) !== norm(label) ? desc : undefined;
+      return {
+        step: idx + 1,
+        label,
+        sublabel,
+        tag: el.tagName.toLowerCase(),
+        tabIndex: Number(el.getAttribute("tabindex") ?? "0"),
+        section: sectionFor(el),
+        isSelf: !!selfRef.current && selfRef.current.contains(el),
+      };
+    });
     setEntries(list);
     // Re-resolve focused step against the newly-collected element list.
     const active = document.activeElement as HTMLElement | null;
