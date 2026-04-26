@@ -45,18 +45,21 @@ func TestTerminal(t *testing.T) {
 }
 
 // TestWriteCSV verifies CSV output has headers and data rows.
+// Uses t.Errorf (not bare `if`) so failures actually fail the test;
+// see csv_header_contract_test.go for the byte-exact header & column
+// contract that downstream consumers depend on.
 func TestWriteCSV(t *testing.T) {
 	var buf bytes.Buffer
 	err := WriteCSV(&buf, testRecords())
 	if err != nil {
 		t.Fatalf("CSV error: %v", err)
 	}
-	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
-	if len(lines) == 3 {
-		t.Log("CSV has header + 2 data rows — OK")
+	lines := strings.Split(strings.TrimRight(buf.String(), "\r\n"), "\r\n")
+	if len(lines) != 3 {
+		t.Errorf("CSV line count: got %d, want 3 (header + 2 rows)", len(lines))
 	}
-	if strings.HasPrefix(lines[0], "repoName") {
-		t.Log("CSV header correct — OK")
+	if !strings.HasPrefix(lines[0], "repoName,") {
+		t.Errorf("CSV header: got %q, want prefix %q", lines[0], "repoName,")
 	}
 }
 
