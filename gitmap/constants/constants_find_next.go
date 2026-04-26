@@ -42,14 +42,23 @@ const (
 	MsgFindNextHeaderFmt   = "Available updates (%d):\n"
 	MsgFindNextRowFmt      = "  %s → %s [method=%s, probed=%s]\n      %s\n"
 	MsgFindNextDoneFmt     = "Hint: run `gitmap pull` or `gitmap cn next all` to apply.\n"
+	// ErrFindNextQuery is the bare wrap-string used by store-side
+	// fmt.Errorf calls. No trailing \n because errors are returned,
+	// not printed. The cmd-layer counterpart (ErrFindNextQueryFmt)
+	// adds the project's standard "Error: ... (operation: ...,
+	// reason: ...)\n" framing for stderr.
+	ErrFindNextQuery = "find-next: failed to query: %w"
+	// ErrFindNextScanRow — same convention, used by store/find_next.go
+	// when a per-row Scan fails.
+	ErrFindNextScanRow = "find-next: failed to scan row: %w"
 	// ErrFindNextQueryFmt wraps any DB-side failure surfaced by
-	// store.DB.FindNext (query prep, row iteration, or per-row scan).
-	// Trailing \n so callers can Fprintf directly to os.Stderr without
-	// adding their own newline — matches the ErrScan* family in
+	// store.DB.FindNext. Trailing \n so callers can Fprintf directly
+	// to os.Stderr — matches the ErrScan* family in
 	// constants_messages.go.
 	ErrFindNextQueryFmt = "Error: find-next failed to query database: %v (operation: select, reason: db error)\n"
-	// ErrFindNextScanRowFmt is reserved for per-row scan failures
-	// inside store/find_next.go. Same trailing-\n convention.
+	// ErrFindNextScanRowFmt is the stderr-formatted counterpart of
+	// ErrFindNextScanRow, kept for symmetry should a future caller
+	// need to print a row-scan failure directly.
 	ErrFindNextScanRowFmt = "Error: find-next failed to scan row: %v (operation: row-scan, reason: db error)\n"
 	// ErrFindNextJSONEncodeFmt fires when json.Encoder.Encode fails
 	// while writing the result array to stdout. Vanishingly rare
