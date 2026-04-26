@@ -42,9 +42,21 @@ const (
 	MsgFindNextHeaderFmt   = "Available updates (%d):\n"
 	MsgFindNextRowFmt      = "  %s → %s [method=%s, probed=%s]\n      %s\n"
 	MsgFindNextDoneFmt     = "Hint: run `gitmap pull` or `gitmap cn next all` to apply.\n"
-	ErrFindNextQuery       = "find-next: failed to query: %v"
-	ErrFindNextScanRow     = "find-next: failed to scan row: %v"
-	MsgFindNextUsageHeader = "Usage: gitmap find-next [--scan-folder <id>] [--json]"
+	// ErrFindNextQueryFmt wraps any DB-side failure surfaced by
+	// store.DB.FindNext (query prep, row iteration, or per-row scan).
+	// Trailing \n so callers can Fprintf directly to os.Stderr without
+	// adding their own newline — matches the ErrScan* family in
+	// constants_messages.go.
+	ErrFindNextQueryFmt = "Error: find-next failed to query database: %v (operation: select, reason: db error)\n"
+	// ErrFindNextScanRowFmt is reserved for per-row scan failures
+	// inside store/find_next.go. Same trailing-\n convention.
+	ErrFindNextScanRowFmt = "Error: find-next failed to scan row: %v (operation: row-scan, reason: db error)\n"
+	// ErrFindNextJSONEncodeFmt fires when json.Encoder.Encode fails
+	// while writing the result array to stdout. Vanishingly rare
+	// (stdout broken pipe), but still routed through stderr with
+	// the standard format so scripts can detect it.
+	ErrFindNextJSONEncodeFmt = "Error: find-next failed to encode JSON output: %v (operation: encode, reason: io error)\n"
+	MsgFindNextUsageHeader   = "Usage: gitmap find-next [--scan-folder <id>] [--json]"
 )
 
 // find-next flag-validation errors. Each one is printed to stderr with
