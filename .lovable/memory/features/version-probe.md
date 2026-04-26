@@ -78,7 +78,10 @@ fire-and-forget) tolerates more parallelism than the foreground command.
 
 - `gitmap/probe/probe.go` — `RunOne`, `tryLsRemote`, `parseFirstTag`, `parseSemverInt`, `Result.AsModel`
 - `gitmap/probe/clone.go` — `tryShallowClone`, `summarize`
+- `gitmap/probe/background.go` — `BackgroundRunner` used by `scan` (independent of foreground pool)
 - `gitmap/store/version_probe.go` — DB methods
-- `gitmap/cmd/probe.go` — `runProbe` + helpers (all under 15-line limit)
-- `gitmap/cmd/scan.go` — `tagReposWithScanFolder` helper added
-- `gitmap/constants/constants_probe.go` — SQL, error messages, CLI tokens
+- `gitmap/cmd/probe.go` — dispatcher + `runProbePool` / `probeWorker`
+- `gitmap/cmd/probeflags.go` — `parseProbeArgs`, `--workers` parsing + clamp
+- `gitmap/cmd/probereport.go` — `executeOneProbe`, JSON shaping, `tallyProbe`
+- `gitmap/cmd/scan.go` — `tagReposWithScanFolder` helper
+- `gitmap/constants/constants_probe.go` — SQL, error messages, CLI tokens, `ProbeDefaultWorkers=2`, `ProbeMaxWorkers=3`
