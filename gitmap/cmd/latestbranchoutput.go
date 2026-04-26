@@ -14,12 +14,9 @@ import (
 )
 
 // latestBranchJSON is the JSON output structure.
-//
-// CONTRACT: field set, JSON tag names, and field DECLARATION order
-// are pinned by gitmap/cmd/latestbranchjson_contract_test.go. The
-// `top` field uses `omitempty` and is contract-tested in BOTH
-// present and absent states. Adding / renaming / reordering fields
-// requires regenerating the golden fixtures.
+// CONTRACT: pinned by gitmap/cmd/latestbranchjson_contract_test.go
+// (field set, tag names, declaration order; both top-present and
+// top-absent states). Changes need fixture regen + changelog bump.
 type latestBranchJSON struct {
 	Branch     []string              `json:"branch"`
 	Remote     string                `json:"remote"`
