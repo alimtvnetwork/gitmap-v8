@@ -107,3 +107,41 @@ func addWindows(clean string, opts AddOptions) (AddResult, error) {
 		return AddResult{}, fmt.Errorf(constants.ErrStartupAddBadBackend, backend.String())
 	}
 }
+
+// removeWindows tries BOTH backends in order: registry first, then
+// startup-folder. First non-NoOp result wins (Add prevents same-
+// named entries in both backends, but defense-in-depth). Returns
+// NoOp only when BOTH backends report no entry by that name.
+func removeWindows(clean string, opts RemoveOptions) (RemoveResult, error) {
+	res, err := removeWindowsRegistry(clean, opts)
+	if err != nil {
+
+		return res, err
+	}
+	if res.Status != RemoveNoOp {
+
+		return res, nil
+	}
+
+	return removeWindowsStartupFolder(clean, opts)
+}
+
+// listWindows enumerates BOTH backends and concatenates the
+// results. Order is registry-first, startup-folder-second so the
+// CLI can group by backend in the rendered output. Returns nil
+// (NOT an error) when both backends are empty — fresh accounts
+// shouldn't see a scary error from `gitmap startup-list`.
+func listWindows() ([]Entry, error) {
+	reg, err := listWindowsRegistry()
+	if err != nil {
+
+		return nil, err
+	}
+	folder, err := listWindowsStartupFolder()
+	if err != nil {
+
+		return nil, err
+	}
+
+	return append(reg, folder...), nil
+}
