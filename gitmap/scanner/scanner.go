@@ -312,7 +312,7 @@ func (st *scanState) processDir(job dirJob) {
 	entries, err := os.ReadDir(job.path)
 	st.dirsWalked.Add(1)
 	if err != nil {
-		st.recordErr(err)
+		st.recordDirErr(job.path, err)
 
 		return
 	}
@@ -416,7 +416,7 @@ func (st *scanState) enqueue(job dirJob) {
 func (st *scanState) recordRepo(repoPath string) {
 	rel, err := filepath.Rel(st.root, repoPath)
 	if err != nil {
-		st.recordErr(err)
+		st.recordDirErr(repoPath, err)
 
 		return
 	}
@@ -429,12 +429,26 @@ func (st *scanState) recordRepo(repoPath string) {
 	st.reposFound.Add(1)
 }
 
-// recordErr stores the FIRST error to occur. Later errors are dropped to
-// keep the public signature single-error and avoid a noisy multi-error.
+// recordErr stores the FIRST error to occur. Later errors are dropped
+// to keep the public signature single-error and avoid a noisy
+// multi-error. Prefer recordDirErr where a path is available so the
+// optional OnDirError callback gets per-dir attribution.
 func (st *scanState) recordErr(err error) {
 	st.mu.Lock()
 	if st.firstErr == nil {
 		st.firstErr = err
 	}
 	st.mu.Unlock()
+}
+
+// recordDirErr captures err under the same first-error policy AND
+// fires the optional OnDirError callback so callers can build a
+// per-directory failure list. The callback runs OUTSIDE the state
+// mutex to keep contention low and to let user callbacks block on
+// their own collectors without serializing the whole walker.
+func (st *scanState) recordDirErr(path string, err error) {
+	st.recordErr(err)
+	if st.onDirError != nil {
+		st.onDirError(path, err)
+	}
 }
