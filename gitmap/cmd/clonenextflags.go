@@ -41,6 +41,11 @@ type CloneNextFlags struct {
 	// when any per-repo clone fails. Off by default; mirrors the
 	// `gitmap scan --errors-report` flag for consistent UX.
 	ReportErrors bool
+	// DryRun, when true, prints the would-be `git clone` commands
+	// (single-repo + batch) and skips ALL side effects — no actual
+	// clone, no folder removal, no DB write, no GH Desktop / VS Code
+	// launch, no shell handoff. See FlagCloneNextDryRun.
+	DryRun bool
 }
 
 // parseCloneNextFlags parses flags for the clone-next command.
