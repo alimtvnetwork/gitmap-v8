@@ -24,4 +24,4 @@ Each `xx-brief-title.md` file contains:
 
 ## Counter
 
-Tasks consumed: 2 / 40 (entry 02 was discovered during entry 01, not a separate user task)
+Tasks consumed: 3 / 40 (entry 02 was discovered during entry 01 and is not counted; entry 04's discovered duplicate-symbol issue is similarly noted in-line, not counted)
