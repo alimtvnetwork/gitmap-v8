@@ -20,6 +20,7 @@ c
 | --github-desktop | false | Auto-register with GitHub Desktop (no prompt) |
 | --audit | false | Validate planned git clone commands and print a diff-style summary; never executes |
 | --max-concurrency \<N\> | 1 | Run up to N clones in parallel (1 = sequential). Hierarchy is preserved at any N. |
+| --default-branch \<name\> | (none) | Fallback branch name when HEAD/remote-tracking detection finds nothing. Rewrites `branchSource=detached \| unknown \| empty` rows so they go through the trusted `git clone -b <name>` path instead of relying on the remote's default HEAD. Empty preserves legacy behavior. |
 | --verbose | false | Write detailed debug log |
 
 ## Hierarchy preservation
