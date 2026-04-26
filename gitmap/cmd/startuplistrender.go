@@ -13,9 +13,10 @@ package cmd
 //     downstream tools can self-discover columns. Empty list still
 //     emits the header so spreadsheet imports get consistent shape.
 //
-// JSON / CSV encoders take an io.Writer (rather than hardcoding
-// os.Stdout) so contract tests can capture the bytes into a buffer
-// for byte-exact comparison against committed golden fixtures.
+// All three encoders (json, csv, table) take an io.Writer rather
+// than hardcoding os.Stdout so contract tests can capture the bytes
+// into a buffer for byte-exact comparison against committed golden
+// fixtures or shape assertions. The CLI dispatcher passes os.Stdout.
 //
 // JSON encoding goes through gitmap/stablejson rather than
 // encoding/json directly: stablejson builds each object key-by-key
@@ -45,26 +46,34 @@ func renderStartupList(format, dir string, entries []startup.Entry) error {
 
 		return encodeStartupListCSV(os.Stdout, entries)
 	default:
-		renderStartupListTable(dir, entries)
 
-		return nil
+		return renderStartupListTable(os.Stdout, dir, entries)
 	}
 }
 
 // renderStartupListTable is the legacy human-readable rendering —
 // extracted verbatim from the original runStartupList so behavior
 // for users who don't pass --format is byte-identical.
-func renderStartupListTable(dir string, entries []startup.Entry) {
-	fmt.Printf(constants.MsgStartupListHeader, dir)
+//
+// Takes an io.Writer so the table contract test in
+// startuplisttable_contract_test.go can capture the rendered bytes
+// into a buffer instead of redirecting os.Stdout. Returns an error
+// (always nil today) so the dispatcher signature stays uniform with
+// the JSON/CSV encoders and a future writer error can be surfaced
+// without changing the dispatch site.
+func renderStartupListTable(w io.Writer, dir string, entries []startup.Entry) error {
+	fmt.Fprintf(w, constants.MsgStartupListHeader, dir)
 	if len(entries) == 0 {
-		fmt.Print(constants.MsgStartupListEmpty)
+		fmt.Fprint(w, constants.MsgStartupListEmpty)
 
-		return
+		return nil
 	}
 	for _, e := range entries {
-		fmt.Printf(constants.MsgStartupListRow, e.Name, renderExec(e.Exec))
+		fmt.Fprintf(w, constants.MsgStartupListRow, e.Name, renderExec(e.Exec))
 	}
-	fmt.Printf(constants.MsgStartupListFooter, len(entries))
+	fmt.Fprintf(w, constants.MsgStartupListFooter, len(entries))
+
+	return nil
 }
 
 // startupListJSONFields names — single source of truth for both the
