@@ -1,18 +1,20 @@
 package cmd
 
 // CLI runners for `gitmap startup-list` and `gitmap startup-remove`.
-// Both commands are Linux/Unix-only — on Windows / macOS they exit
-// with a clear "unsupported OS" message rather than silently doing
-// nothing (silent no-ops on a different OS would be a UX trap: the
-// user would assume their startup entries are managed when they're
-// not).
+// Both commands work on Linux/Unix (XDG `.desktop` files) and macOS
+// (LaunchAgent `.plist` files); on Windows they exit with a clear
+// "unsupported OS" message rather than silently doing nothing
+// (silent no-ops on a different OS would be a UX trap: the user
+// would assume their startup entries are managed when they're not).
 //
 // Output contract (per user requirement):
 //   - Clear: every outcome prints exactly one line summary.
 //   - Safe no-op: missing files, third-party files, and empty
 //     listings all exit 0 with a message — never an error.
-//   - Scoped: only X-Gitmap-Managed entries are touched. The startup
-//     package enforces this; this layer just renders the result.
+//   - Scoped: only entries carrying the gitmap marker are touched.
+//     The startup package enforces this; this layer just renders the
+//     result. `--dry-run` runs the same classification but skips
+//     the actual unlink.
 
 import (
 	"flag"
