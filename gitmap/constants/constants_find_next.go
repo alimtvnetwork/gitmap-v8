@@ -42,9 +42,30 @@ const (
 	MsgFindNextHeaderFmt   = "Available updates (%d):\n"
 	MsgFindNextRowFmt      = "  %s → %s [method=%s, probed=%s]\n      %s\n"
 	MsgFindNextDoneFmt     = "Hint: run `gitmap pull` or `gitmap cn next all` to apply.\n"
-	ErrFindNextQuery       = "find-next: failed to query: %v"
-	ErrFindNextScanRow     = "find-next: failed to scan row: %v"
-	MsgFindNextUsageHeader = "Usage: gitmap find-next [--scan-folder <id>] [--json]"
+	// ErrFindNextQuery is the bare wrap-string used by store-side
+	// fmt.Errorf calls. No trailing \n because errors are returned,
+	// not printed. The cmd-layer counterpart (ErrFindNextQueryFmt)
+	// adds the project's standard "Error: ... (operation: ...,
+	// reason: ...)\n" framing for stderr.
+	ErrFindNextQuery = "find-next: failed to query: %w"
+	// ErrFindNextScanRow — same convention, used by store/find_next.go
+	// when a per-row Scan fails.
+	ErrFindNextScanRow = "find-next: failed to scan row: %w"
+	// ErrFindNextQueryFmt wraps any DB-side failure surfaced by
+	// store.DB.FindNext. Trailing \n so callers can Fprintf directly
+	// to os.Stderr — matches the ErrScan* family in
+	// constants_messages.go.
+	ErrFindNextQueryFmt = "Error: find-next failed to query database: %v (operation: select, reason: db error)\n"
+	// ErrFindNextScanRowFmt is the stderr-formatted counterpart of
+	// ErrFindNextScanRow, kept for symmetry should a future caller
+	// need to print a row-scan failure directly.
+	ErrFindNextScanRowFmt = "Error: find-next failed to scan row: %v (operation: row-scan, reason: db error)\n"
+	// ErrFindNextJSONEncodeFmt fires when json.Encoder.Encode fails
+	// while writing the result array to stdout. Vanishingly rare
+	// (stdout broken pipe), but still routed through stderr with
+	// the standard format so scripts can detect it.
+	ErrFindNextJSONEncodeFmt = "Error: find-next failed to encode JSON output: %v (operation: encode, reason: io error)\n"
+	MsgFindNextUsageHeader   = "Usage: gitmap find-next [--scan-folder <id>] [--json]"
 )
 
 // find-next flag-validation errors. Each one is printed to stderr with
