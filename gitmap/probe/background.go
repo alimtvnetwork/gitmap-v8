@@ -58,6 +58,12 @@ type BackgroundRunner struct {
 	// Set via SetFailureHook BEFORE the first Start so the workers
 	// observe the assignment without a data race.
 	onFailure func(record model.ScanRecord, result Result)
+
+	// cloneDepth is the `--depth N` passed to the shallow-clone
+	// fallback. Defaults to constants.ProbeDefaultDepth (1). Override
+	// via SetCloneDepth before the first Start so workers observe a
+	// stable value without locking.
+	cloneDepth int
 }
 
 // SetFailureHook installs a per-failure callback. Must be called
@@ -71,6 +77,19 @@ func (r *BackgroundRunner) SetFailureHook(hook func(model.ScanRecord, Result)) {
 		return
 	}
 	r.onFailure = hook
+}
+
+// SetCloneDepth overrides the shallow-clone --depth value used by the
+// fallback strategy. Must be called BEFORE the first Start; values < 1
+// are coerced to 1. Nil receiver is a silent no-op.
+func (r *BackgroundRunner) SetCloneDepth(depth int) {
+	if r == nil {
+		return
+	}
+	if depth < 1 {
+		depth = 1
+	}
+	r.cloneDepth = depth
 }
 
 // runnerStats tracks per-bucket counters under its own mutex.
