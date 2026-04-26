@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -108,47 +107,7 @@ func buildTopItems(items []gitutil.RemoteBranchInfo, top int) []latestBranchTopI
 	return topItems
 }
 
-// printLatestCSV outputs the latest branch result as CSV.
-func printLatestCSV(items []gitutil.RemoteBranchInfo, remote string, top int) {
-	count := resolveTopCount(top, len(items))
-	w := csv.NewWriter(os.Stdout)
-	if err := w.Write(constants.LatestBranchCSVHeaders); err != nil {
-		fmt.Fprintf(os.Stderr, "  ✗ Failed to write CSV header: %v\n", err)
-
-		return
-	}
-	for _, item := range items[:count] {
-		writeCSVRow(w, item, remote)
-	}
-	w.Flush()
-}
-
-// resolveTopCount determines how many items to display.
-func resolveTopCount(top, total int) int {
-	count := 1
-	if top > 0 {
-		count = top
-	}
-	if count > total {
-		count = total
-	}
-
-	return count
-}
-
-// writeCSVRow writes a single CSV row for a branch item.
-func writeCSVRow(w *csv.Writer, item gitutil.RemoteBranchInfo, remote string) {
-	if err := w.Write([]string{
-		gitutil.StripRemotePrefix(item.RemoteRef),
-		remote,
-		gitutil.TruncSha(item.Sha),
-		gitutil.FormatDisplayDate(item.CommitDate),
-		item.Subject,
-		item.RemoteRef,
-	}); err != nil {
-		fmt.Fprintf(os.Stderr, "  ✗ Failed to write CSV row: %v\n", err)
-	}
-}
+// CSV output lives in latestbranchcsv.go (file-size budget split).
 
 // printLatestTerminal outputs the latest branch result as text.
 func printLatestTerminal(result latestBranchResult, items []gitutil.RemoteBranchInfo, top int) {
