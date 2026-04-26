@@ -46,7 +46,7 @@ func renderStartupList(format string, jsonIndent int, dir string, entries []star
 	switch format {
 	case constants.OutputJSON:
 
-		return encodeStartupListJSON(os.Stdout, entries, jsonIndent)
+		return encodeStartupListJSONIndent(os.Stdout, entries, jsonIndent)
 	case constants.StartupListFormatJSONL:
 
 		return encodeStartupListJSONL(os.Stdout, entries)
