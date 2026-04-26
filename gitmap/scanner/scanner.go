@@ -249,7 +249,7 @@ func (st *scanState) processDir(dir string) {
 
 		return
 	}
-	if st.containsGitDir(entries) {
+	if st.containsGitMarker(dir, entries) {
 		st.recordRepo(dir)
 
 		return
@@ -262,16 +262,48 @@ func (st *scanState) processDir(dir string) {
 	}
 }
 
-// containsGitDir reports whether any entry is a `.git` directory — the
-// signal that `dir` itself is a repo root.
-func (st *scanState) containsGitDir(entries []os.DirEntry) bool {
+// containsGitMarker reports whether `dir` is a git repo root. A directory
+// counts as a repo when it contains either:
+//
+//   - a `.git` subdirectory (the standard layout), OR
+//   - a `.git` regular file whose contents start with `gitdir:` — the
+//     layout used by `git worktree add` linked checkouts and by
+//     submodules whose .git was absorbed into the superproject.
+//
+// The file form is gated on the `gitdir:` prefix so a stray `.git` text
+// file (e.g. from a misconfigured editor) does not yield a false repo.
+// We read at most gitFileSniffBytes to keep the check cheap on large
+// trees — a real `.git` file is ~tens of bytes.
+func (st *scanState) containsGitMarker(dir string, entries []os.DirEntry) bool {
 	for _, entry := range entries {
-		if entry.IsDir() && entry.Name() == constants.ExtGit {
+		if entry.Name() != constants.ExtGit {
+			continue
+		}
+		if entry.IsDir() {
+			return true
+		}
+		if isGitdirFile(filepath.Join(dir, entry.Name())) {
 			return true
 		}
 	}
 
 	return false
+}
+
+// isGitdirFile returns true when path is a regular file beginning with
+// the `gitdir:` prefix. Read errors are treated as "not a marker" so a
+// transient permission glitch silently skips the candidate rather than
+// failing the whole scan.
+func isGitdirFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	buf := make([]byte, gitFileSniffBytes)
+	n, _ := f.Read(buf)
+
+	return strings.HasPrefix(string(buf[:n]), gitdirPrefix)
 }
 
 // handleSubdir applies the exclude filter and enqueues the subdir for
