@@ -32,9 +32,11 @@ have to open every unrelated file in the directory.
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--format` | `table` | Output format: `table`, `json`, `jsonl`, or `csv` |
+| `--json-indent` | `2` | Spaces per indent level for `--format=json`. `0` = minified single line. Range: 0..8. Ignored for non-json formats. |
 
 `table` (alias: `terminal`) is the legacy human-readable rendering.
-Unknown values exit with code 2 so scripts catch typos immediately.
+Bad `--format` values and out-of-range `--json-indent` both exit 2.
+`--json-indent` is validated even when the format ignores it.
 
 ## Output formats
 
@@ -69,6 +71,10 @@ the `exec` field is the space-joined `ProgramArguments` array (or
 ]
 ```
 
+With `--json-indent=0` the same output collapses to one minified
+line. Key order is identical at every indent (whitespace only).
+The `[]\n` empty-list contract holds across all indent settings.
+
 ### `--format=jsonl`
 
 One compact JSON object per line, terminated by `\n`. Same field
@@ -102,12 +108,10 @@ commands on that platform instead.
 ### macOS LaunchAgent caveats
 
 - `startup-list` and `startup-remove` operate on the `.plist` file
-  ONLY. They do NOT call `launchctl load/unload` — a removed plist
+  ONLY — they do NOT call `launchctl load/unload`. A removed plist
   takes effect at the next login or after a manual
-  `launchctl unload <path>`. This is intentional: invoking
-  `launchctl` requires a running user GUI session and would make
-  automated uninstall scripts brittle on CI / SSH sessions.
-- Binary plists are not supported. Gitmap-managed entries are always
-  written in XML form, so a binary plist with our prefix is by
-  definition not ours and gets the same "refused" treatment as a
-  third-party file.
+  `launchctl unload <path>`. Intentional: `launchctl` requires a
+  GUI session, making automated uninstall scripts brittle on CI.
+- Binary plists are not supported. Gitmap-managed entries are
+  always XML, so a binary plist with our prefix is treated as
+  third-party and refused.

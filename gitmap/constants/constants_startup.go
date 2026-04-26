@@ -144,6 +144,24 @@ const (
 	StartupListCSVHeader = "name,path,exec"
 )
 
+// startup-list --json-indent flag. Controls whitespace in
+// `--format=json` output without ever changing key order. Accepted
+// values: integers 0..8 (0 = minified single-line; 2 = the long-
+// standing pretty-printed default; 4/8 for editors that prefer
+// wider indents). Negative or >8 values are rejected at parse time.
+//
+// Silently IGNORED for `--format=table`, `--format=csv`, and
+// `--format=jsonl` (which is line-oriented and minified by design).
+// Silent rather than error so shell scripts that always pass
+// `--json-indent=N --format=$F` for varying $F don't have to branch.
+const (
+	FlagStartupListJSONIndent     = "json-indent"
+	FlagDescStartupListJSONIndent = "Spaces per indent level for --format=json (0 = minified, default 2). Ignored for non-json formats."
+	StartupListJSONIndentDefault  = 2
+	StartupListJSONIndentMax      = 8
+	ErrStartupListBadJSONIndent   = "startup-list: --json-indent %d out of range (expected: 0..8)"
+)
+
 // startup-remove CLI flag. Single boolean for now; kept in its own
 // const block so future flags (e.g. --trash, --backup-to) can land
 // alongside without disturbing the list-format block above.

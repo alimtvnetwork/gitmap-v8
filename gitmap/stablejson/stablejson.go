@@ -53,8 +53,6 @@ package stablejson
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"io"
 )
 
@@ -67,38 +65,54 @@ type Field struct {
 	Value any
 }
 
-// WriteArray writes `items` as a JSON array of objects to w. Each
-// inner []Field is one object; field order within an object follows
-// the slice order. Empty `items` writes the literal `[]\n` so jq
-// pipelines that do `length` never have to special-case `null`.
-//
-// Indentation matches `json.Encoder.SetIndent("", "  ")` so callers
-// migrating from the standard encoder get byte-identical output and
-// existing golden fixtures keep passing without regeneration.
+// WriteArray writes `items` as a pretty-printed JSON array of
+// objects with 2-space indentation. Equivalent to WriteArrayIndent
+// with indent="  " — kept as a separate entry point so existing
+// callers (and the byte-compat contract test against
+// json.Encoder.SetIndent("", "  ")) continue to pass unchanged.
 func WriteArray(w io.Writer, items [][]Field) error {
+	return WriteArrayIndent(w, items, "  ")
+}
+
+// WriteArrayIndent writes `items` as a JSON array of objects with
+// the caller-controlled per-level `indent` string. Two modes:
+//
+//   - indent == ""   → minified single-line output:
+//                      `[{"k":v,"k2":v2},{"k":v}]\n`
+//                      No inter-token whitespace, one trailing `\n`.
+//   - indent != ""   → pretty-printed multi-line output. The string
+//                      is used verbatim as the per-level prefix —
+//                      pass `"  "` for the encoding/json default,
+//                      `"\t"` for tabs, `"    "` for four spaces.
+//                      Each value line gets `indent` (level 1) and
+//                      each object key line gets `indent+indent`
+//                      (level 2), matching json.Encoder behavior.
+//
+// Empty `items` always writes `[]\n` regardless of indent — this
+// matches WriteArray's pre-existing contract that downstream
+// consumers (jq `length`, dashboards) depend on.
+//
+// Field order within each object follows the slice order verbatim
+// in BOTH modes — the indent flag controls only whitespace, never
+// key ordering. This is the headline guarantee of the package and
+// what makes a `--json-indent` CLI flag safe: the bytes change but
+// the semantic key sequence is byte-locked.
+func WriteArrayIndent(w io.Writer, items [][]Field, indent string) error {
 	if len(items) == 0 {
 		_, err := io.WriteString(w, "[]\n")
 
 		return err
 	}
 	var buf bytes.Buffer
-	buf.WriteString("[\n")
-	for i, obj := range items {
-		if err := writeObject(&buf, obj); err != nil {
+	if indent == "" {
 
-			return err
-		}
-		if i < len(items)-1 {
-			buf.WriteString(",\n")
-		} else {
-			buf.WriteString("\n")
-		}
+		return writeArrayMinified(w, &buf, items)
 	}
-	buf.WriteString("]\n")
-	_, err := w.Write(buf.Bytes())
 
-	return err
+	return writeArrayPretty(w, &buf, items, indent)
 }
+
+// writeArrayPretty / writeArrayMinified live in writers.go.
 
 // WriteJSONLines writes `items` as JSON Lines: one compact object
 // per line, terminated by `\n` (the de-facto `jsonl` format consumed
@@ -131,65 +145,4 @@ func WriteJSONLines(w io.Writer, items [][]Field) error {
 	return err
 }
 
-// writeCompactObject writes a single `{"k":v,"k2":v2}` block (no
-// whitespace between tokens) into buf. Key order follows the slice.
-// Each value is JSON-marshalled in isolation so a malformed value
-// fails the WHOLE call rather than emitting half a corrupt line —
-// critical for JSONL because a half-written line would desync every
-// downstream parser that splits on `\n`.
-func writeCompactObject(buf *bytes.Buffer, fields []Field) error {
-	buf.WriteByte('{')
-	for i, f := range fields {
-		if i > 0 {
-			buf.WriteByte(',')
-		}
-		keyBytes, err := json.Marshal(f.Key)
-		if err != nil {
-
-			return fmt.Errorf("stablejson: encode key %q: %w", f.Key, err)
-		}
-		buf.Write(keyBytes)
-		buf.WriteByte(':')
-		valBytes, err := json.Marshal(f.Value)
-		if err != nil {
-
-			return fmt.Errorf("stablejson: encode value for key %q: %w", f.Key, err)
-		}
-		buf.Write(valBytes)
-	}
-	buf.WriteByte('}')
-
-	return nil
-}
-
-// writeObject writes a single `{ ... }` block at array-item
-// indentation (2 spaces outer, 4 spaces inner) into buf. Keys appear
-// in the exact order given. Each value is JSON-marshalled in
-// isolation so a malformed value fails the WHOLE call rather than
-// emitting half a corrupt object.
-func writeObject(buf *bytes.Buffer, fields []Field) error {
-	buf.WriteString("  {\n")
-	for i, f := range fields {
-		buf.WriteString("    ")
-		keyBytes, err := json.Marshal(f.Key)
-		if err != nil {
-
-			return fmt.Errorf("stablejson: encode key %q: %w", f.Key, err)
-		}
-		buf.Write(keyBytes)
-		buf.WriteString(": ")
-		valBytes, err := json.Marshal(f.Value)
-		if err != nil {
-
-			return fmt.Errorf("stablejson: encode value for key %q: %w", f.Key, err)
-		}
-		buf.Write(valBytes)
-		if i < len(fields)-1 {
-			buf.WriteString(",")
-		}
-		buf.WriteString("\n")
-	}
-	buf.WriteString("  }")
-
-	return nil
-}
+// writeCompactObject and writeObject live in writers.go.

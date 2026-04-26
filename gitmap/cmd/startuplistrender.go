@@ -1,28 +1,17 @@
 package cmd
 
-// Renderers for `gitmap startup-list --format=...`. Split out from
-// startup.go so the per-format encoder logic doesn't push the parent
-// file over the 200-line code-style budget. Three formats supported:
+// Renderers for `gitmap startup-list --format=...`. Four formats:
+// table (default human-readable), json (pretty array, indent
+// configurable via --json-indent), jsonl (one minified object per
+// line), csv (RFC4180 with header). All encoders take an io.Writer
+// so contract tests can capture bytes into a buffer; the CLI
+// dispatcher passes os.Stdout.
 //
-//   - table (default): human-readable, identical to the pre-flag
-//     output so existing users see no change.
-//   - json: array of {name, path, exec} objects. Empty list renders
-//     as `[]` (NOT `null`) so jq-based pipelines never have to
-//     special-case missing data.
-//   - csv: RFC4180 via encoding/csv. Header row is always written so
-//     downstream tools can self-discover columns. Empty list still
-//     emits the header so spreadsheet imports get consistent shape.
-//
-// All three encoders (json, csv, table) take an io.Writer rather
-// than hardcoding os.Stdout so contract tests can capture the bytes
-// into a buffer for byte-exact comparison against committed golden
-// fixtures or shape assertions. The CLI dispatcher passes os.Stdout.
-//
-// JSON encoding goes through gitmap/stablejson rather than
+// JSON / JSONL encoding goes through gitmap/stablejson rather than
 // encoding/json directly: stablejson builds each object key-by-key
 // in caller-declared order and CANNOT be reordered by a future Go
-// release or encoding/json/v2. The output is byte-identical to the
-// previous Encoder-based code, so the existing golden fixtures pass
+// release. Pretty 2-space output is byte-identical to the legacy
+// Encoder.SetIndent("", "  "), so existing golden fixtures pass
 // unchanged. See gitmap/stablejson/stablejson.go for full rationale.
 
 import (
@@ -36,12 +25,17 @@ import (
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/startup"
 )
 
-// renderStartupList dispatches to the per-format encoder.
-func renderStartupList(format, dir string, entries []startup.Entry) error {
+// renderStartupList dispatches to the per-format encoder. The
+// `jsonIndent` parameter is only consulted for `--format=json`;
+// other formats ignore it (jsonl is line-oriented and minified by
+// design, csv has no nesting, table is human-prose). This keeps
+// shell scripts that always pass `--json-indent=N` regardless of
+// format from breaking when they switch to a non-json sink.
+func renderStartupList(format string, jsonIndent int, dir string, entries []startup.Entry) error {
 	switch format {
 	case constants.OutputJSON:
 
-		return encodeStartupListJSON(os.Stdout, entries)
+		return encodeStartupListJSONIndent(os.Stdout, entries, jsonIndent)
 	case constants.StartupListFormatJSONL:
 
 		return encodeStartupListJSONL(os.Stdout, entries)
@@ -95,18 +89,50 @@ const (
 	startupListJSONKeyExec = "exec"
 )
 
-// encodeStartupListJSON writes a JSON array to w using stablejson,
-// which builds each object key-by-key in caller-declared order
-// instead of relying on encoding/json's reflection-based struct
-// field iteration. This guarantees field order CANNOT drift even if
-// a future Go release (or encoding/json/v2) changes how struct
-// fields are walked. See gitmap/stablejson/stablejson.go for the
-// full rationale and byte-compat guarantee.
+// encodeStartupListJSON writes a JSON array to w using stablejson
+// at the long-standing 2-space-indent default. Thin wrapper around
+// encodeStartupListJSONIndent kept so existing contract tests (and
+// any future caller that doesn't care about indent) don't have to
+// thread a width parameter through every call site.
 //
 // Empty input still encodes as `[]\n` (NOT `null`) so jq pipelines
 // that do `length` work without conditionals.
 func encodeStartupListJSON(w io.Writer, entries []startup.Entry) error {
-	return stablejson.WriteArray(w, buildStartupListJSONItems(entries))
+	return encodeStartupListJSONIndent(w, entries, constants.StartupListJSONIndentDefault)
+}
+
+// encodeStartupListJSONIndent writes a JSON array with caller-
+// controlled per-level indent width. `jsonIndent==0` emits a
+// single-line minified `[{"k":v}]\n` (matches `jq -c` framing);
+// any positive N emits a pretty-printed document with N spaces per
+// level. Key order is identical across every indent value — the
+// contract test in startuplistjson_indent_contract_test.go pins
+// this by re-parsing each variant and comparing the key sequence.
+//
+// stablejson handles the `[]\n` empty case identically across
+// indent values, so jq pipelines that do `length` keep working
+// regardless of which indent the user chose.
+func encodeStartupListJSONIndent(w io.Writer, entries []startup.Entry, jsonIndent int) error {
+	indent := indentSpaces(jsonIndent)
+
+	return stablejson.WriteArrayIndent(w, buildStartupListJSONItems(entries), indent)
+}
+
+// indentSpaces converts the integer --json-indent value into the
+// per-level prefix string stablejson expects. 0 → empty (minified
+// branch); N>0 → N spaces. Centralized so a future "tabs" extension
+// (e.g. --json-indent=tab) lands in exactly one place.
+func indentSpaces(n int) string {
+	if n <= 0 {
+
+		return ""
+	}
+	out := make([]byte, n)
+	for i := range out {
+		out[i] = ' '
+	}
+
+	return string(out)
 }
 
 // encodeStartupListJSONL writes one compact JSON object per line in
