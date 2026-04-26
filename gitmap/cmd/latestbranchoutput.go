@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -13,6 +14,12 @@ import (
 )
 
 // latestBranchJSON is the JSON output structure.
+//
+// CONTRACT: field set, JSON tag names, and field DECLARATION order
+// are pinned by gitmap/cmd/latestbranchjson_contract_test.go. The
+// `top` field uses `omitempty` and is contract-tested in BOTH
+// present and absent states. Adding / renaming / reordering fields
+// requires regenerating the golden fixtures.
 type latestBranchJSON struct {
 	Branch     []string              `json:"branch"`
 	Remote     string                `json:"remote"`
@@ -24,6 +31,7 @@ type latestBranchJSON struct {
 }
 
 // latestBranchTopItem is a single entry in the top-N list.
+// CONTRACT: same pinning as latestBranchJSON.
 type latestBranchTopItem struct {
 	Branch     string `json:"branch"`
 	Sha        string `json:"sha"`
@@ -48,15 +56,27 @@ func dispatchLatestOutput(result latestBranchResult, items []gitutil.RemoteBranc
 
 // printLatestJSON outputs the latest branch result as JSON.
 func printLatestJSON(result latestBranchResult, items []gitutil.RemoteBranchInfo, top int) {
+	if err := encodeLatestBranchJSON(os.Stdout, result, items, top); err != nil {
+		fmt.Fprintf(os.Stderr, "  ✗ Failed to encode latest branch JSON: %v\n", err)
+	}
+}
+
+// encodeLatestBranchJSON builds the on-the-wire struct and writes it
+// to w with the project-standard 2-space indent. Split out from
+// printLatestJSON so contract tests can capture the bytes into a
+// buffer instead of stdout.
+func encodeLatestBranchJSON(
+	w io.Writer, result latestBranchResult,
+	items []gitutil.RemoteBranchInfo, top int,
+) error {
 	out := buildLatestJSON(result)
 	if top > 0 {
 		out.Top = buildTopItems(items, top)
 	}
-	enc := json.NewEncoder(os.Stdout)
+	enc := json.NewEncoder(w)
 	enc.SetIndent("", constants.JSONIndent)
-	if err := enc.Encode(out); err != nil {
-		fmt.Fprintf(os.Stderr, "  ✗ Failed to encode latest branch JSON: %v\n", err)
-	}
+
+	return enc.Encode(out)
 }
 
 // buildLatestJSON constructs the base JSON output struct.
