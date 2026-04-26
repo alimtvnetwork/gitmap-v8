@@ -72,28 +72,62 @@ func parseStartupListFlags(args []string) (string, error) {
 	}
 }
 
-// runStartupRemove deletes a single managed entry. The argument list
-// must contain exactly one positional name; missing or extra args
-// trigger the usage error. All four RemoveStatus outcomes map to a
-// distinct user-visible message so the CLI is unambiguous about what
-// happened.
+// runStartupRemove deletes a single managed entry. After --dry-run
+// is parsed off the args, exactly one positional name must remain;
+// missing or extra positionals trigger the usage error. All four
+// RemoveStatus outcomes map to a distinct user-visible message
+// (with a `(dry-run)` mirror set when --dry-run is active) so the
+// CLI is unambiguous about what happened — or what would happen.
 func runStartupRemove(args []string) {
-	if len(args) != 1 {
+	name, dryRun, err := parseStartupRemoveFlags(args)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, constants.ErrStartupRemoveUsage)
 		os.Exit(2)
 	}
-	res, err := startup.Remove(args[0])
+	res, err := startup.RemoveWithOptions(name, startup.RemoveOptions{DryRun: dryRun})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
-	printRemoveResult(args[0], res)
+	printRemoveResult(name, res)
+}
+
+// parseStartupRemoveFlags pulls --dry-run off the args and returns
+// the remaining single positional name. Returns an error when the
+// positional count is wrong so the caller exits 2 with the usage
+// message — matching the pre-flag behavior for malformed invocations.
+func parseStartupRemoveFlags(args []string) (string, bool, error) {
+	fs := flag.NewFlagSet(constants.CmdStartupRemove, flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	dryRun := fs.Bool(
+		constants.FlagStartupRemoveDryRun, false,
+		constants.FlagDescStartupRemoveDryRun,
+	)
+	if err := fs.Parse(args); err != nil {
+
+		return "", false, err
+	}
+	rest := fs.Args()
+	if len(rest) != 1 {
+
+		return "", false, fmt.Errorf("expected 1 positional name, got %d", len(rest))
+	}
+
+	return rest[0], *dryRun, nil
 }
 
 // printRemoveResult routes one of four messages depending on the
-// status. Each branch is single-line so users grepping logs can
-// classify outcomes without parsing multi-line output.
+// status. Dry-run results pick the `(dry-run)` mirror message so a
+// preview is visually distinct from a real action — important when
+// users pipe both into the same log. Each branch is single-line so
+// log-scrapers can classify outcomes without parsing multi-line
+// output.
 func printRemoveResult(name string, res startup.RemoveResult) {
+	if res.DryRun {
+		printRemoveResultDryRun(name, res)
+
+		return
+	}
 	switch res.Status {
 	case startup.RemoveDeleted:
 		fmt.Printf(constants.MsgStartupRemoveOK, res.Path)
@@ -103,5 +137,22 @@ func printRemoveResult(name string, res startup.RemoveResult) {
 		fmt.Printf(constants.MsgStartupRemoveNotOurs, res.Path)
 	case startup.RemoveBadName:
 		fmt.Printf(constants.MsgStartupRemoveBadName, name)
+	}
+}
+
+// printRemoveResultDryRun is the `--dry-run` parallel of
+// printRemoveResult. Kept as its own function (rather than an
+// if/else inside the parent switch) so the live and preview message
+// tables are easy to diff line-for-line during code review.
+func printRemoveResultDryRun(name string, res startup.RemoveResult) {
+	switch res.Status {
+	case startup.RemoveDeleted:
+		fmt.Printf(constants.MsgStartupRemoveDryOK, res.Path)
+	case startup.RemoveNoOp:
+		fmt.Printf(constants.MsgStartupRemoveDryNoOp, name)
+	case startup.RemoveRefused:
+		fmt.Printf(constants.MsgStartupRemoveDryNotOurs, res.Path)
+	case startup.RemoveBadName:
+		fmt.Printf(constants.MsgStartupRemoveDryBadName, name)
 	}
 }
