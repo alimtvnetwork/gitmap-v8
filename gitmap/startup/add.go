@@ -116,6 +116,10 @@ func Add(opts AddOptions) (AddResult, error) {
 	if !isValidName(clean) {
 		return AddResult{Status: AddBadName}, nil
 	}
+	if runtime.GOOS == "windows" {
+
+		return addWindows(clean, opts)
+	}
 	dir, err := AutostartDir()
 	if err != nil {
 		return AddResult{}, err
@@ -126,6 +130,25 @@ func Add(opts AddOptions) (AddResult, error) {
 	full := joinPath(dir, platformFilename(clean))
 
 	return writeManaged(full, clean, opts)
+}
+
+// addWindows is the Windows-only branch of Add. Routes through the
+// chosen backend (Registry or Startup-folder). Kept here (not in
+// winbackend.go) so the public Add API has one place readers find
+// the os-routing decision.
+func addWindows(clean string, opts AddOptions) (AddResult, error) {
+	backend := resolveBackendForAdd(opts.Backend)
+	switch backend {
+	case BackendRegistry:
+
+		return addWindowsRegistry(clean, opts)
+	case BackendStartupFolder:
+
+		return addWindowsStartupFolder(clean, opts)
+	default:
+
+		return AddResult{}, fmt.Errorf(constants.ErrStartupAddBadBackend, backend.String())
+	}
 }
 
 // platformFilename picks the OS-specific filename shape. macOS uses
