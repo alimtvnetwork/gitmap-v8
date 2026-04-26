@@ -71,10 +71,11 @@ func defineReplaceFlags() (*flag.FlagSet, rawReplaceFlags) {
 // unknown value is fatal — silent fallback would mask user typos.
 func resolveExtCase(raw string) bool {
 	v := strings.ToLower(strings.TrimSpace(raw))
+	// ReplaceExtCaseDefault aliases ReplaceExtCaseInsensitive, so the
+	// empty string and both names share one branch (collapsing them
+	// avoids a duplicate-case compile error).
 	switch v {
-	case "", constants.ReplaceExtCaseDefault:
-		return true
-	case constants.ReplaceExtCaseInsensitive:
+	case "", constants.ReplaceExtCaseInsensitive:
 		return true
 	case constants.ReplaceExtCaseSensitive:
 		return false

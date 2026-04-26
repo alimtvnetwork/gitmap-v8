@@ -15,6 +15,7 @@ package cmd
 //   <positional>                 forwarded to opts.rest
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -125,7 +126,7 @@ func readIntFlag(args []string, i int, missingFmt, valueFmt string) (int, int, e
 		return n, i, err
 	}
 	if i+1 >= len(args) {
-		return 0, i, fmt.Errorf(missingFmt)
+		return 0, i, errors.New(missingFmt)
 	}
 	n, err := parsePositiveInt(args[i+1], valueFmt)
 
