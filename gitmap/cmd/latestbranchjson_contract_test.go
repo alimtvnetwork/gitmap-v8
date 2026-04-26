@@ -1,0 +1,81 @@
+package cmd
+
+// JSON schema contract tests for `gitmap latest-branch --json`.
+//
+// Same two-tier strictness as startuplistjson_contract_test.go:
+// byte-exact for canonical fixtures, structural for variable data.
+// Covers BOTH the top-level latestBranchJSON object AND the nested
+// latestBranchTopItem objects inside `top`, since `omitempty` makes
+// `top` a sometimes-present field — both states must be pinned.
+//
+// Regenerate fixtures with:
+//
+//   GITMAP_UPDATE_GOLDEN=1 go test ./cmd/ -run LatestBranchJSONContract
+
+import (
+	"bytes"
+	"testing"
+	"time"
+
+	"github.com/alimtvnetwork/gitmap-v7/gitmap/gitutil"
+)
+
+// canonicalLatestResult builds a deterministic latestBranchResult
+// for byte-exact tests. Every value is a fixed string so the golden
+// file's bytes are reproducible across machines, timezones, and
+// gitutil format-helper changes (we go around the helpers by
+// pre-formatting the strings ourselves at the call site).
+func canonicalLatestResult() latestBranchResult {
+
+	return latestBranchResult{
+		branchNames:    []string{"main", "develop"},
+		selectedRemote: "origin",
+		shortSha:       "abc1234",
+		commitDate:     "01-Jan-2025 12:00 PM (UTC)",
+		latest: gitutil.RemoteBranchInfo{
+			RemoteRef:  "refs/remotes/origin/main",
+			CommitDate: time.Unix(0, 0).UTC(),
+			Sha:        "abc1234567890",
+			Subject:    "Initial commit",
+		},
+	}
+}
+
+// TestLatestBranchJSONContract_NoTopOmitsKey pins the bytes when
+// `top` is absent (top=0). The `omitempty` tag on Top means the key
+// must NOT appear in the output.
+func TestLatestBranchJSONContract_NoTopOmitsKey(t *testing.T) {
+	var buf bytes.Buffer
+	err := encodeLatestBranchJSON(&buf, canonicalLatestResult(), nil, 0)
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	assertGoldenBytes(t, "latest_branch_no_top.json", buf.Bytes())
+	assertObjectKeyOrder(t, buf.Bytes(), []string{
+		"branch", "remote", "sha", "commitDate", "subject", "ref",
+	})
+}
+
+// TestLatestBranchJSONContract_WithTopIncludesKey verifies the
+// `top` key is present and the nested object's key order matches
+// the latestBranchTopItem declaration. Structural-only (no
+// byte-exact golden) because buildTopItems calls
+// gitutil.FormatDisplayDate which uses the LOCAL timezone — bytes
+// would drift across CI machines.
+func TestLatestBranchJSONContract_WithTopIncludesKey(t *testing.T) {
+	items := []gitutil.RemoteBranchInfo{
+		{
+			RemoteRef:  "refs/remotes/origin/main",
+			CommitDate: time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC),
+			Sha:        "abc1234567890",
+			Subject:    "Initial commit",
+		},
+	}
+	var buf bytes.Buffer
+	if err := encodeLatestBranchJSON(&buf, canonicalLatestResult(), items, 1); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	assertObjectKeyOrder(t, buf.Bytes(), []string{
+		"branch", "remote", "sha", "commitDate", "subject", "ref", "top",
+	})
+}
