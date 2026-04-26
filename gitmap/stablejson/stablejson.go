@@ -100,25 +100,18 @@ func WriteArray(w io.Writer, items [][]Field) error {
 	return err
 }
 
-// WriteJSONLines writes `items` as JSON Lines (one compact object
-// per line, terminated by `\n` — RFC 7464-adjacent, the de-facto
-// `jsonl` format consumed by jq, fluentd, BigQuery, DuckDB, etc.).
+// WriteJSONLines writes `items` as JSON Lines: one compact object
+// per line, terminated by `\n` (the de-facto `jsonl` format consumed
+// by jq, fluentd, BigQuery, DuckDB).
 //
-// Each inner []Field is one object; field order within an object
-// follows the slice order verbatim, identical to WriteArray. The
-// difference is purely framing:
-//
-//   - WriteArray:    one pretty-printed `[…]` document, 2-space indent
-//   - WriteJSONLines: one compact `{…}` per line, no indent, no array
+// Field order within each object follows the slice order verbatim,
+// identical to WriteArray. The difference is purely framing —
+// WriteArray pretty-prints a single `[…]` document; WriteJSONLines
+// emits one compact `{…}` per line with no array wrapper.
 //
 // Empty `items` writes ZERO bytes (NOT `\n`, NOT `[]`) so a consumer
-// that does `wc -l` on the stream sees `0` for an empty list. This
-// matches the JSON Lines convention used by jq's `--compact-output`
-// and is the only sensible empty-case for line-oriented pipelines.
-//
-// Each object is emitted with no inter-key whitespace — `{"k":v,"k2":v2}`
-// — to keep one logical record per physical line. A trailing `\n`
-// terminates every line including the last, so concatenating two
+// that does `wc -l` on the stream sees `0` for an empty list. Each
+// line ends with `\n` (including the last) so concatenating two
 // WriteJSONLines outputs produces a valid combined stream.
 func WriteJSONLines(w io.Writer, items [][]Field) error {
 	if len(items) == 0 {
