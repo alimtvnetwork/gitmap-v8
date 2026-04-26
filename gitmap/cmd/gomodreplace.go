@@ -81,7 +81,7 @@ func findFilesWithPath(oldPath string, exts []string) []string {
 		if err != nil {
 			return nil
 		}
-		if info.IsDir() && isExcludedDir(info.Name()) {
+		if info.IsDir() && isGoModExcludedDir(info.Name()) {
 			return filepath.SkipDir
 		}
 		if info.IsDir() {
@@ -90,7 +90,7 @@ func findFilesWithPath(oldPath string, exts []string) []string {
 		if path == constants.GoModFile {
 			return nil
 		}
-		if matchesExtFilter(path, exts) && fileContains(path, oldPath) {
+		if matchesGoModExt(path, exts) && fileContains(path, oldPath) {
 			matches = append(matches, path)
 		}
 
@@ -100,9 +100,11 @@ func findFilesWithPath(oldPath string, exts []string) []string {
 	return matches
 }
 
-// matchesExtFilter returns true if the file matches the extension filter.
-// An empty exts slice means all files match.
-func matchesExtFilter(path string, exts []string) bool {
+// matchesGoModExt returns true if the file matches the extension filter.
+// An empty exts slice means all files match. Domain-prefixed to avoid
+// colliding with the replace package's matchesExtFilter (which carries
+// an additional case-sensitivity flag).
+func matchesGoModExt(path string, exts []string) bool {
 	if len(exts) == 0 {
 		return true
 	}
@@ -138,8 +140,10 @@ func parseExtFlag(raw string) []string {
 	return exts
 }
 
-// isExcludedDir checks if a directory should be skipped.
-func isExcludedDir(name string) bool {
+// isGoModExcludedDir checks if a directory should be skipped.
+// Domain-prefixed to avoid colliding with the replace package's
+// isExcludedDir (which uses ReplaceExcludedDirs).
+func isGoModExcludedDir(name string) bool {
 	for _, d := range constants.GoModExcludeDirs {
 		if name == d {
 			return true

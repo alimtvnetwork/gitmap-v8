@@ -57,7 +57,7 @@ func runReplaceVersion(n int, opts replaceOpts, isAll bool) {
 // scanVersionTargets runs one scan per target version, accumulating
 // hits across all passes. Per-target output is printed inline.
 func scanVersionTargets(
-	files []string, base, k int, targets []int, quiet bool,
+	files []string, base string, k int, targets []int, quiet bool,
 ) ([]replaceHit, int) {
 	all := make([]replaceHit, 0, 16)
 	total := 0
