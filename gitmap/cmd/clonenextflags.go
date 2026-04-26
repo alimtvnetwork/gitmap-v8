@@ -25,6 +25,13 @@ type CloneNextFlags struct {
 	// fallback so the user gets either a flat layout or a clear error.
 	// See spec/01-app/87-clone-next-flatten.md.
 	Force bool
+	// MaxConcurrency is the worker-pool size for batch mode (--all / --csv).
+	// 1 (the default) preserves the historical sequential behavior so
+	// stdout ordering of per-repo lines is deterministic. Values >1 fan
+	// repos out across a bounded pool that mirrors the main cloner's
+	// pattern (see gitmap/cloner/concurrent.go). Ignored in single-repo
+	// mode where there is only one unit of work.
+	MaxConcurrency int
 }
 
 // parseCloneNextFlags parses flags for the clone-next command.
@@ -44,6 +51,11 @@ func parseCloneNextFlags(args []string) CloneNextFlags {
 	// pairing convention used elsewhere in this flagset).
 	forceFlag := fs.Bool("force", false, constants.FlagDescCloneNextForce)
 	fs.BoolVar(forceFlag, "f", false, constants.FlagDescCloneNextForce)
+	// Batch worker-pool size. Reuses the same flag name as `gitmap clone`
+	// so users learn one name (--max-concurrency / -j is reserved for a
+	// later short alias if needed). Default 1 = sequential.
+	maxConcFlag := fs.Int(constants.CloneFlagMaxConcurrency,
+		constants.CloneDefaultMaxConcurrency, constants.FlagDescCloneMaxConcurrency)
 	// Reorder so flags placed AFTER the positional version (e.g.
 	// `gitmap cn v+1 -f`) are still recognized. Go's stdlib flag
 	// parser stops at the first non-flag arg, so without this the
