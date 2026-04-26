@@ -26,7 +26,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"testing"
 
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/startup"
