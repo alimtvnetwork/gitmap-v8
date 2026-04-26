@@ -3,6 +3,7 @@ package mapper
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -12,15 +13,57 @@ import (
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/scanner"
 )
 
-// BuildRecords converts a list of RepoInfo into ScanRecords.
+// BuildRecords converts a list of RepoInfo into ScanRecords using the
+// per-repo RelativePath the scanner already computed (against the scan
+// dir). Kept as a thin wrapper so legacy callers (cmd/as.go,
+// cmd/releaseautoregister.go) don't need to thread an unused root.
 func BuildRecords(repos []scanner.RepoInfo, mode, defaultNote string) []model.ScanRecord {
+	return BuildRecordsWithRoot(repos, mode, defaultNote, "")
+}
+
+// BuildRecordsWithRoot is like BuildRecords but rewrites every
+// RelativePath against `relRoot` (must be an absolute, cleaned path)
+// when non-empty. This is what powers `gitmap scan --relative-root`:
+// it pins the base used for all output artifacts so running the same
+// scan from different cwds yields byte-identical CSV/JSON/scripts.
+//
+// When a repo lives outside relRoot, filepath.Rel returns a "../"-prefixed
+// path. We refuse that and emit a clear stderr message naming the offending
+// repo, falling back to the scanner-computed RelativePath for THAT row so
+// one bad ancestor doesn't drop the entire record.
+func BuildRecordsWithRoot(repos []scanner.RepoInfo, mode, defaultNote, relRoot string) []model.ScanRecord {
 	records := make([]model.ScanRecord, 0, len(repos))
 	for _, repo := range repos {
+		repo.RelativePath = relativePathFor(repo, relRoot)
 		rec := buildOneRecord(repo, mode, defaultNote)
 		records = append(records, rec)
 	}
 
 	return records
+}
+
+// relativePathFor returns the RelativePath to record for `repo`. With an
+// empty relRoot we keep the scanner's value verbatim. Otherwise we recompute
+// against relRoot and reject "../" escapes.
+func relativePathFor(repo scanner.RepoInfo, relRoot string) string {
+	if relRoot == "" {
+		return repo.RelativePath
+	}
+	rel, err := filepath.Rel(relRoot, repo.AbsolutePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, constants.ErrScanRelativeRootNotAncestor,
+			relRoot, repo.AbsolutePath, err.Error())
+
+		return repo.RelativePath
+	}
+	if strings.HasPrefix(rel, "..") {
+		fmt.Fprintf(os.Stderr, constants.ErrScanRelativeRootNotAncestor,
+			relRoot, repo.AbsolutePath, rel)
+
+		return repo.RelativePath
+	}
+
+	return rel
 }
 
 // buildOneRecord creates a single ScanRecord from a RepoInfo.
