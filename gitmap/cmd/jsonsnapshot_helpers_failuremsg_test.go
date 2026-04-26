@@ -148,9 +148,7 @@ func scanEveryObjectKeysPure(raw []byte) ([][]string, error) {
 }
 
 // pureCollectObjectKeys is the error-returning twin of
-// collectObjectKeys. The `objIdx` parameter lets the failure
-// message name the broken object the same way the production
-// helper's t.Fatalf wrapper would.
+// collectObjectKeys; `objIdx` names the broken object in messages.
 func pureCollectObjectKeys(dec *json.Decoder, objIdx int) ([]string, error) {
 	var keys []string
 	for dec.More() {
