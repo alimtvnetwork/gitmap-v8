@@ -28,6 +28,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -43,6 +44,17 @@ const scanWorkersMax = 16
 // validators) that want to clamp user-provided values into the supported
 // range.
 const MaxScanWorkers = scanWorkersMax
+
+// gitFileSniffBytes is the read budget for `.git` regular files when
+// checking for the `gitdir:` prefix that marks worktree / absorbed
+// submodule checkouts. Real `.git` files are tens of bytes; 256 is a
+// generous upper bound that keeps detection cheap on huge trees.
+const gitFileSniffBytes = 256
+
+// gitdirPrefix is the literal token a worktree/submodule .git file
+// starts with: `gitdir: <path>`. Required prefix-match — anything else
+// is treated as a non-git file to avoid false positives.
+const gitdirPrefix = "gitdir:"
 
 // RepoInfo holds raw data extracted from a discovered Git repo.
 type RepoInfo struct {
