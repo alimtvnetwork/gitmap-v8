@@ -54,27 +54,43 @@ func applyProbeFlag(opts *probeOptions, args []string, i int) (int, bool, error)
 		return i, true, nil
 	}
 	if a == constants.ProbeFlagWorkers {
-		if i+1 >= len(args) {
-			return i, true, fmt.Errorf(constants.ErrProbeWorkersMissing)
-		}
-		n, err := parseWorkersValue(args[i+1])
-		if err != nil {
-			return i, true, err
-		}
-		opts.workers = clampProbeWorkers(n)
-		return i + 1, true, nil
+		return applyWorkersTwoArg(opts, args, i)
 	}
-	prefix := constants.ProbeFlagWorkers + "="
-	if len(a) > len(prefix) && a[:len(prefix)] == prefix {
-		n, err := parseWorkersValue(a[len(prefix):])
-		if err != nil {
-			return i, true, err
-		}
-		opts.workers = clampProbeWorkers(n)
-		return i, true, nil
+	if next, ok, err := applyWorkersInline(opts, a, i); ok || err != nil {
+		return next, true, err
 	}
 
 	return i, false, nil
+}
+
+// applyWorkersTwoArg handles `--workers N` (value is the next arg).
+func applyWorkersTwoArg(opts *probeOptions, args []string, i int) (int, bool, error) {
+	if i+1 >= len(args) {
+		return i, true, fmt.Errorf(constants.ErrProbeWorkersMissing)
+	}
+	n, err := parseWorkersValue(args[i+1])
+	if err != nil {
+		return i, true, err
+	}
+	opts.workers = clampProbeWorkers(n)
+
+	return i + 1, true, nil
+}
+
+// applyWorkersInline handles `--workers=N`. ok=false means this token
+// is not a `--workers=` form and the caller should keep matching.
+func applyWorkersInline(opts *probeOptions, token string, i int) (int, bool, error) {
+	prefix := constants.ProbeFlagWorkers + "="
+	if len(token) <= len(prefix) || token[:len(prefix)] != prefix {
+		return i, false, nil
+	}
+	n, err := parseWorkersValue(token[len(prefix):])
+	if err != nil {
+		return i, true, err
+	}
+	opts.workers = clampProbeWorkers(n)
+
+	return i, true, nil
 }
 
 // parseWorkersValue validates the `--workers` argument as a positive int.
