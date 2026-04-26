@@ -56,6 +56,25 @@ const gitFileSniffBytes = 256
 // is treated as a non-git file to avoid false positives.
 const gitdirPrefix = "gitdir:"
 
+// DefaultMaxDepth is the hard cap on directory descent below the scan
+// root, applied even when no repo has been found on the path. The scan
+// root itself is depth 0, its immediate children depth 1, and so on —
+// so a value of 4 walks up to four levels of subdirectories below the
+// root and refuses to enqueue anything deeper. Chosen to comfortably
+// cover typical "code/<org>/<project>/<service>/" layouts while
+// preventing runaway walks into dependency trees that slipped past the
+// exclude list. Override per-scan via ScanOptions.MaxDepth.
+const DefaultMaxDepth = 4
+
+// dirJob pairs a queued directory with its depth below the scan root so
+// the worker can decide whether children are still in budget without
+// recomputing the depth from path arithmetic. Using a struct (vs a
+// `chan string` plus a side map) keeps the depth check lock-free.
+type dirJob struct {
+	path  string
+	depth int
+}
+
 // RepoInfo holds raw data extracted from a discovered Git repo.
 type RepoInfo struct {
 	AbsolutePath string
