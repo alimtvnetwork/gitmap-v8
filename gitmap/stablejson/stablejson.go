@@ -145,4 +145,6 @@ func WriteJSONLines(w io.Writer, items [][]Field) error {
 	_, err := w.Write(buf.Bytes())
 
 	return err
+}
+
 // writeCompactObject and writeObject live in writers.go.
