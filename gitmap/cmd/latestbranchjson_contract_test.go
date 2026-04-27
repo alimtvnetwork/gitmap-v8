@@ -73,7 +73,5 @@ func TestLatestBranchJSONContract_WithTopIncludesKey(t *testing.T) {
 	if err := encodeLatestBranchJSON(&buf, canonicalLatestResult(), items, 1); err != nil {
 		t.Fatalf("encode: %v", err)
 	}
-	assertObjectKeyOrder(t, buf.Bytes(), []string{
-		"branch", "remote", "sha", "commitDate", "subject", "ref", "top",
-	})
+	assertSchemaKeysFirstObject(t, buf.Bytes(), "latest-branch-with-top")
 }
