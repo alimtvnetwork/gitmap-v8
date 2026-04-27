@@ -30,7 +30,7 @@ gitmap rg --pattern <TestPattern>                               # short alias
 | `--package` | `./...`    | Go package selector. Scope tightly to avoid touching unrelated fixtures. |
 | `--skip-verify` | false  | Skip the determinism verification pass. **Not recommended** — the verify pass is the whole point. |
 | `--dry-run` | false       | Print the `go test` invocations that would run, then exit 0. |
-| `--diff` | false          | After pass 1, print a concise per-file summary of which `testdata/` goldens changed (status + line counts) before pass 2 runs. |
+| `--diff=<mode>` | (off)  | After pass 1, print a per-file summary of which `testdata/` goldens changed. `short` = one terse line per file (status + path). `full` = adds `+adds / -deletes` line counts, rename source paths, and renamed totals. Use `--diff=short` or `--diff=full`. |
 
 ## Behavior
 
