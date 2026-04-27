@@ -79,14 +79,14 @@
      VS Code blue    #0078D4 ≈ hsl(207 100% 42%) — kept on side accents only
   */
   .dark {
-    --background: 0 0% 12%;            /* editor */
-    --foreground: 0 0% 80%;            /* primary text #CCCCCC */
+    --background: 0 0% 7%;             /* editor — deeper than VS Code default for contrast */
+    --foreground: 0 0% 82%;            /* primary text — slightly brighter to compensate */
 
-    --card: 0 0% 9%;                   /* sidebar / activity bar */
-    --card-foreground: 0 0% 80%;
+    --card: 0 0% 5%;                   /* sidebar / activity bar — near black */
+    --card-foreground: 0 0% 82%;
 
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 80%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 82%;
 
     --primary: 41 96% 56%;             /* amber — kept */
     --primary-foreground: 0 0% 8%;
