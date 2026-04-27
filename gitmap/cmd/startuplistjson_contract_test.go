@@ -33,11 +33,12 @@ import (
 // jq-compat guarantee: zero managed entries must encode as `[]\n`,
 // never `null`, so `<output> | length` works without conditionals.
 func TestStartupListJSONContract_EmptyIsArrayNotNull(t *testing.T) {
-	var buf bytes.Buffer
-	if err := encodeStartupListJSON(&buf, nil); err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	assertGoldenBytes(t, "startup_list_empty.json", buf.Bytes())
+	assertGoldenBytesDeterministic(t, "startup_list_empty.json", func() ([]byte, error) {
+		var buf bytes.Buffer
+		err := encodeStartupListJSON(&buf, nil)
+
+		return buf.Bytes(), err
+	})
 }
 
 // TestStartupListJSONContract_EmptyNonNilSliceAlsoIsArray covers
@@ -50,11 +51,12 @@ func TestStartupListJSONContract_EmptyIsArrayNotNull(t *testing.T) {
 // step would still pass EmptyIsArrayNotNull but silently break
 // callers that pass a pre-allocated empty slice.
 func TestStartupListJSONContract_EmptyNonNilSliceAlsoIsArray(t *testing.T) {
-	var buf bytes.Buffer
-	if err := encodeStartupListJSON(&buf, []startup.Entry{}); err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	assertGoldenBytes(t, "startup_list_empty.json", buf.Bytes())
+	assertGoldenBytesDeterministic(t, "startup_list_empty.json", func() ([]byte, error) {
+		var buf bytes.Buffer
+		err := encodeStartupListJSON(&buf, []startup.Entry{})
+
+		return buf.Bytes(), err
+	})
 }
 
 // TestStartupListJSONContract_CanonicalEntry pins the exact bytes
@@ -68,11 +70,12 @@ func TestStartupListJSONContract_CanonicalEntry(t *testing.T) {
 			Exec: "/usr/local/bin/gitmap watch ~/projects",
 		},
 	}
-	var buf bytes.Buffer
-	if err := encodeStartupListJSON(&buf, entries); err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	assertGoldenBytes(t, "startup_list_single.json", buf.Bytes())
+	assertGoldenBytesDeterministic(t, "startup_list_single.json", func() ([]byte, error) {
+		var buf bytes.Buffer
+		err := encodeStartupListJSON(&buf, entries)
+
+		return buf.Bytes(), err
+	})
 }
 
 // TestStartupListJSONContract_KeyOrderStable validates that each

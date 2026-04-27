@@ -33,11 +33,12 @@ import (
 // guarantee: zero rows must encode as `[]\n` even when the input
 // slice is nil.
 func TestFindNextJSONContract_EmptyIsArrayNotNull(t *testing.T) {
-	var buf bytes.Buffer
-	if err := encodeFindNextJSON(&buf, nil); err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	assertGoldenBytes(t, "find_next_empty.json", buf.Bytes())
+	assertGoldenBytesDeterministic(t, "find_next_empty.json", func() ([]byte, error) {
+		var buf bytes.Buffer
+		err := encodeFindNextJSON(&buf, nil)
+
+		return buf.Bytes(), err
+	})
 }
 
 // canonicalFindNextRow builds a deterministic single row whose every

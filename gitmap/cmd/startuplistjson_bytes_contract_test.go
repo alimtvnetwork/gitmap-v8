@@ -47,11 +47,12 @@ func TestStartupListJSONBytes_MultiEntry(t *testing.T) {
 		{Name: "gitmap-b", Path: "/p/b.desktop", Exec: "/bin/b --flag"},
 		{Name: "gitmap-c", Path: "/p/c.desktop", Exec: ""},
 	}
-	var buf bytes.Buffer
-	if err := encodeStartupListJSON(&buf, entries); err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	assertGoldenBytes(t, "startup_list_multi.json", buf.Bytes())
+	assertGoldenBytesDeterministic(t, "startup_list_multi.json", func() ([]byte, error) {
+		var buf bytes.Buffer
+		err := encodeStartupListJSON(&buf, entries)
+
+		return buf.Bytes(), err
+	})
 }
 
 // TestStartupListJSONBytes_SpecialChars pins escape sequences for
@@ -85,9 +86,10 @@ func TestStartupListJSONBytes_SpecialChars(t *testing.T) {
 			Exec: "a\tb\nc\u0001d",
 		},
 	}
-	var buf bytes.Buffer
-	if err := encodeStartupListJSON(&buf, entries); err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	assertGoldenBytes(t, "startup_list_special.json", buf.Bytes())
+	assertGoldenBytesDeterministic(t, "startup_list_special.json", func() ([]byte, error) {
+		var buf bytes.Buffer
+		err := encodeStartupListJSON(&buf, entries)
+
+		return buf.Bytes(), err
+	})
 }

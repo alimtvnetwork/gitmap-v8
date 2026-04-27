@@ -45,13 +45,17 @@ func canonicalLatestResult() latestBranchResult {
 // `top` is absent (top=0). The `omitempty` tag on Top means the key
 // must NOT appear in the output.
 func TestLatestBranchJSONContract_NoTopOmitsKey(t *testing.T) {
-	var buf bytes.Buffer
-	err := encodeLatestBranchJSON(&buf, canonicalLatestResult(), nil, 0)
-	if err != nil {
-		t.Fatalf("encode: %v", err)
+	encode := func() ([]byte, error) {
+		var buf bytes.Buffer
+		err := encodeLatestBranchJSON(&buf, canonicalLatestResult(), nil, 0)
+
+		return buf.Bytes(), err
 	}
-	assertGoldenBytes(t, "latest_branch_no_top.json", buf.Bytes())
-	assertSchemaKeysFirstObject(t, buf.Bytes(), "latest-branch-no-top")
+	assertGoldenBytesDeterministic(t, "latest_branch_no_top.json", encode)
+	// Schema check uses a fresh encode so a bug in the helper that
+	// mutates the returned slice cannot cross-contaminate the two checks.
+	raw, _ := encode()
+	assertSchemaKeysFirstObject(t, raw, "latest-branch-no-top")
 }
 
 // TestLatestBranchJSONContract_WithTopIncludesKey verifies the
