@@ -102,11 +102,20 @@ func goTestArgv(cfg regoldensFlags) []string {
 	return []string{"go", "test", cfg.pkg, "-run", cfg.pattern, "-count=1"}
 }
 
-// executeRegoldens runs pass 1, then (unless --skip-verify) pass 2.
+// executeRegoldens runs pass 1, optionally emits the diff summary,
+// then (unless --skip-verify) runs pass 2. The diff summary is
+// emitted whether pass 1 passed or failed so contributors can see
+// which fixtures were partially written before the failure.
 func executeRegoldens(cfg regoldensFlags) {
-	runRegoldensPass(cfg, true,
-		constants.MsgRegoldensPass1Header,
-		constants.ErrRegoldensPass1Failed)
+	pass1Code := runRegoldensPassCapture(cfg, true, constants.MsgRegoldensPass1Header)
+	if cfg.showDiff {
+		emitGoldenDiffSummary()
+	}
+	if pass1Code != 0 {
+		fmt.Fprintf(os.Stderr, constants.ErrRegoldensPass1Failed, pass1Code)
+		fmt.Fprintln(os.Stderr)
+		os.Exit(1)
+	}
 	if cfg.skipVerify {
 		fmt.Fprint(os.Stderr, constants.MsgRegoldensSkipVerify)
 		fmt.Fprintf(os.Stdout, constants.MsgRegoldensSuccessNoVeri,
@@ -119,6 +128,15 @@ func executeRegoldens(cfg regoldensFlags) {
 	fmt.Fprintf(os.Stdout, constants.MsgRegoldensSuccess,
 		cfg.pattern, cfg.pkg)
 }
+
+// runRegoldensPassCapture prints the header and runs one pass,
+// returning the exit code instead of exiting. Used when downstream
+// work (e.g. diff summary) must run regardless of pass outcome.
+func runRegoldensPassCapture(cfg regoldensFlags, withGate bool, header string) int {
+	fmt.Fprint(os.Stderr, header)
+	return runGoTestPass(cfg, withGate)
+}
+
 
 // runRegoldensPass prints the header, runs one pass, and exits 1
 // with the supplied error format on failure. withGate toggles the
