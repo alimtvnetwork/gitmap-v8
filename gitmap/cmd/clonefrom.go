@@ -113,6 +113,8 @@ func parseCloneFromFlags(args []string) cloneFromFlags {
 		false, constants.FlagDescClonePrintArgv)
 	fs.StringVar(&cfg.checkout, constants.FlagCloneFromCheckout, "",
 		constants.FlagDescCloneFromCheckout)
+	maxConcFlag := fs.Int(constants.CloneFlagMaxConcurrency,
+		constants.CloneDefaultMaxConcurrency, constants.FlagDescCloneMaxConcurrency)
 	reordered := reorderFlagsBeforeArgs(args)
 	fs.Parse(reordered)
 	if fs.NArg() < 1 {
@@ -120,6 +122,12 @@ func parseCloneFromFlags(args []string) cloneFromFlags {
 		os.Exit(2)
 	}
 	validateCheckoutFlag(cfg.checkout)
+	resolvedConc, ok := cloneconcurrency.Resolve(*maxConcFlag)
+	if !ok {
+		fmt.Fprintf(os.Stderr, constants.ErrCloneMaxConcurrencyInvalid, *maxConcFlag)
+		os.Exit(2)
+	}
+	cfg.maxConcurrency = resolvedConc
 	cfg.file = fs.Arg(0)
 
 	return cfg
