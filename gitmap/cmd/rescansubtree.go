@@ -1,6 +1,16 @@
 package cmd
 
-// CLI entry point for `gitmap rescan-subtree <absolutePath>`.
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+
+	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
+)
+
+// runRescanSubtree is the CLI entry point for
+// `gitmap rescan-subtree <absolutePath>`.
 //
 // Workflow this command supports:
 //
@@ -27,19 +37,6 @@ package cmd
 //	    existing directory. Distinct from the scan failure exit code so
 //	    shell wrappers can tell "you invoked me wrong" apart from "the
 //	    walk itself failed".
-
-import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-
-	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
-)
-
-// runRescanSubtree validates <absolutePath> and forwards the rest of
-// argv to runScan with a deeper default --max-depth applied when the
-// caller did not specify one.
 func runRescanSubtree(args []string) {
 	checkHelp("rescan-subtree", args)
 
