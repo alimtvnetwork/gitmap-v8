@@ -96,11 +96,12 @@ func collectWriterRuns(writer WriterFn) ([][]byte, error) {
 	return out, nil
 }
 
-// assertAllRunsEqual compares every run after the first against
-// run[0]. The first divergence triggers t.Fatalf with a snippet of
+// assertAllRunsEqualOn compares every run after the first against
+// run[0]. The first divergence triggers Fatalf with a snippet of
 // each side so the writer's drift is visible without dumping the
-// entire blob into the test log.
-func assertAllRunsEqual(t *testing.T, label string, runs [][]byte) {
+// entire blob into the test log. Takes a fataler so unit tests can
+// inject a fake.
+func assertAllRunsEqualOn(t fataler, label string, runs [][]byte) {
 	t.Helper()
 	for i := 1; i < len(runs); i++ {
 		if bytes.Equal(runs[0], runs[i]) {
