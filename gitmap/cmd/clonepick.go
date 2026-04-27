@@ -30,7 +30,7 @@ import (
 func runClonePick(args []string) {
 	checkHelp("clone-pick", args)
 
-	rawURL, rawPaths, flags := parseClonePickFlags(args)
+	rawURL, rawPaths, flags, output := parseClonePickFlags(args)
 	plan, err := clonepick.ParseArgs(rawURL, rawPaths, flags)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -38,6 +38,14 @@ func runClonePick(args []string) {
 	}
 
 	if plan.DryRun {
+		// `--output terminal`: emit the standardized block instead
+		// of the legacy clonepick.Render output. Keeps the per-repo
+		// summary shape consistent across every clone command.
+		if output == constants.OutputTerminal {
+			printClonePickTermBlock(plan)
+
+			return
+		}
 		if err := clonepick.Render(os.Stdout, plan); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -46,6 +54,9 @@ func runClonePick(args []string) {
 		return
 	}
 
+	if output == constants.OutputTerminal {
+		printClonePickTermBlock(plan)
+	}
 	runClonePickExecute(plan)
 }
 
@@ -53,7 +64,7 @@ func runClonePick(args []string) {
 // two positional args. Validation that needs cross-flag knowledge
 // happens in clonepick.ParseArgs so this stays focused on flag
 // binding.
-func parseClonePickFlags(args []string) (string, string, clonepick.Flags) {
+func parseClonePickFlags(args []string) (string, string, clonepick.Flags, string) {
 	defaults := clonepick.DefaultFlags()
 	flags := defaults
 	fs := flag.NewFlagSet("clone-pick", flag.ExitOnError)
@@ -79,6 +90,8 @@ func parseClonePickFlags(args []string) (string, string, clonepick.Flags) {
 		constants.FlagDescClonePickQuiet)
 	fs.BoolVar(&flags.Force, constants.FlagClonePickForce, defaults.Force,
 		constants.FlagDescClonePickForce)
+	output := fs.String(constants.FlagCloneTermOutput, "",
+		constants.FlagDescCloneTermOutput)
 
 	reordered := reorderFlagsBeforeArgs(args)
 	fs.Parse(reordered)
@@ -93,7 +106,7 @@ func parseClonePickFlags(args []string) (string, string, clonepick.Flags) {
 		rawPaths = fs.Arg(1)
 	}
 
-	return rawURL, rawPaths, flags
+	return rawURL, rawPaths, flags, *output
 }
 
 // runClonePickExecute opens the DB (best-effort), runs the

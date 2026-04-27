@@ -118,6 +118,16 @@ func runCloneFromExecute(plan clonefrom.Plan, cfg cloneFromFlags) {
 	if cfg.quiet {
 		progress = io.Discard
 	}
+	// `--output terminal`: emit the standardized RepoTermBlock for
+	// every plan row BEFORE executing, mirroring the dry-run output
+	// shape so users get the same per-repo preview whether or not
+	// they passed --execute. Plan-driven (no per-row hook into the
+	// executor) — see clonetermplan.go for the design rationale.
+	if cfg.output == constants.OutputTerminal {
+		if err := clonefrom.RenderTerminal(os.Stdout, plan); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}
 	results := clonefrom.Execute(plan, "", progress)
 	reportPath := ""
 	if !cfg.noReport {

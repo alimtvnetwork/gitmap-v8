@@ -149,6 +149,11 @@ type CloneFlags struct {
 	Verbose        bool
 	Audit          bool
 	MaxConcurrency int
+	// Output selects the per-repo summary format. Empty (default)
+	// keeps the legacy terse messages; "terminal" emits the
+	// standardized RepoTermBlock right before each clone runs so
+	// the shape matches scan/clone-next/clone-from/probe.
+	Output string
 }
 
 // parseCloneFlags parses flags for the clone command.
@@ -169,6 +174,7 @@ func parseCloneFlags(args []string) CloneFlags {
 	// detection finds nothing); keeping one source of truth means
 	// `gitmap scan --help` and `gitmap clone --help` cannot drift.
 	defaultBranchFlag := fs.String(constants.FlagScanDefaultBranch, "", constants.FlagDescScanDefaultBranch)
+	outputFlag := fs.String(constants.FlagCloneTermOutput, "", constants.FlagDescCloneTermOutput)
 	fs.Parse(args)
 
 	return CloneFlags{
@@ -184,6 +190,7 @@ func parseCloneFlags(args []string) CloneFlags {
 		Verbose:        *verboseFlag,
 		Audit:          *auditFlag,
 		MaxConcurrency: *maxConcFlag,
+		Output:         *outputFlag,
 	}
 }
 

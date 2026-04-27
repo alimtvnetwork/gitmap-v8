@@ -71,7 +71,7 @@ func runClone(args []string) {
 	}
 
 	if isDirectURL(cf.Source) {
-		executeDirectClone(cf.Source, cf.FolderName, cf.GHDesktop, cf.NoReplace)
+		executeDirectClone(cf.Source, cf.FolderName, cf.GHDesktop, cf.NoReplace, cf.Output)
 
 		return
 	}
@@ -139,6 +139,13 @@ func runCloneMulti(cf CloneFlags) {
 	for idx, url := range urls {
 		fmt.Printf(constants.MsgCloneMultiItem, idx+1, len(urls), url)
 
+		// `--output terminal`: stream the standardized RepoTermBlock
+		// BEFORE shelling out so the user sees branch/from/to/command
+		// for THIS repo before its clone progress, then the next
+		// repo's block after this one finishes. Mirrors the streamed
+		// emission contract locked in chat.
+		printCloneTermBlockForURL(cf.Output, idx+1, url, "")
+
 		if err := executeDirectCloneOne(url, "", cf.GHDesktop, cf.NoReplace); err != nil {
 			fmt.Fprintf(os.Stderr, constants.ErrCloneMultiFailedFmt, idx+1, len(urls), url, err)
 			failed++
@@ -198,7 +205,7 @@ func repoNameFromURL(url string) string {
 // By default, an existing target folder is replaced via the two-strategy
 // flow in spec/01-app/96-clone-replace-existing-folder.md. Pass noReplace=true
 // to restore the strict abort-on-exists behavior.
-func executeDirectClone(url, folderName string, ghDesktopFlag, noReplace bool) {
+func executeDirectClone(url, folderName string, ghDesktopFlag, noReplace bool, output string) {
 	repoName := repoNameFromURL(url)
 	if len(folderName) == 0 {
 		parsed := clonenext.ParseRepoName(repoName)
@@ -240,6 +247,12 @@ func executeDirectClone(url, folderName string, ghDesktopFlag, noReplace bool) {
 	if taskDB != nil {
 		defer taskDB.Close()
 	}
+
+	// `--output terminal`: emit the standardized per-repo block to
+	// stdout BEFORE the legacy "Cloning ..." line so the user sees
+	// branch/from/to/command up-front. No-op when output is empty,
+	// which preserves byte-identical legacy output.
+	printCloneTermBlockForURL(output, 1, url, absPath)
 
 	// Clone (default: replace; with --no-replace: clone into a guaranteed-empty target).
 	fmt.Printf(constants.MsgCloneURLCloning, repoName, folderName)
