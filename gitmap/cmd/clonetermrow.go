@@ -15,6 +15,8 @@ package cmd
 // already does and gives the user a live, scannable transcript.
 
 import (
+	"fmt"
+
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonefrom"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonenow"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
@@ -25,6 +27,14 @@ import (
 // printCloneNowTermBlocks (the batch variant) so streaming and
 // upfront output stay byte-for-byte identical per row — only the
 // timing changes.
+//
+// Faithfulness: clonenow's executor (clonenow/execute.go
+// buildGitArgs) only passes `-b` when row.Branch is non-empty —
+// the ls-remote-detected fallback we show on the `branch:` line
+// is informational only. CmdBranch is therefore pinned to
+// row.Branch (NOT the detected fallback) so the printed cmd
+// matches the real argv exactly. URL/dest are passed through
+// from the executor's resolveRowDisplay.
 func printCloneNowTermBlockRow(index, total int, row clonenow.Row,
 	url, dest string) {
 	_ = total // total is reserved for a future "[i/N]" prefix; unused today
@@ -42,8 +52,10 @@ func printCloneNowTermBlockRow(index, total int, row clonenow.Row,
 		OriginalURL:  url,
 		TargetURL:    url,
 		Dest:         dest,
+		CmdBranch:    row.Branch, // executor uses row.Branch, NOT detected
 	})
 }
+
 
 // printCloneFromTermBlockRow emits one RepoTermBlock for one
 // clone-from row. clone-from never rewrites URLs, so OriginalURL
@@ -51,6 +63,12 @@ func printCloneNowTermBlockRow(index, total int, row clonenow.Row,
 // clonefrom.branchSourceForRow ("manifest" if pinned, else the
 // ls-remote-discovered default — falling through to "(unknown)"
 // inside the renderer if detection fails).
+//
+// Faithfulness: the executor (clonefrom/execute.go buildGitArgs)
+// only passes `-b` when row.Branch is non-empty, and adds
+// `--depth=N` AFTER `-b` when row.Depth > 0. The printed cmd
+// mirrors that exactly via CmdBranch (= row.Branch, NOT the
+// ls-remote fallback) and CmdExtraArgsPost.
 func printCloneFromTermBlockRow(index, total int, row clonefrom.Row,
 	dest string) {
 	_ = total // reserved for future "[i/N]" prefix
@@ -60,13 +78,19 @@ func printCloneFromTermBlockRow(index, total int, row clonefrom.Row,
 		branch = detectRemoteHEAD(row.URL)
 		source = remoteBranchSource(branch)
 	}
+	var post []string
+	if row.Depth > 0 {
+		post = []string{fmt.Sprintf("--depth=%d", row.Depth)}
+	}
 	maybePrintCloneTermBlock(constants.OutputTerminal, CloneTermBlockInput{
-		Index:        index,
-		Name:         dest,
-		Branch:       branch,
-		BranchSource: source,
-		OriginalURL:  row.URL,
-		TargetURL:    row.URL,
-		Dest:         dest,
+		Index:            index,
+		Name:             dest,
+		Branch:           branch,
+		BranchSource:     source,
+		OriginalURL:      row.URL,
+		TargetURL:        row.URL,
+		Dest:             dest,
+		CmdBranch:        row.Branch, // executor uses row.Branch, NOT detected
+		CmdExtraArgsPost: post,
 	})
 }

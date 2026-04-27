@@ -41,5 +41,18 @@ func printCloneTermBlockForURL(output string, idx int, url, dest string) {
 		OriginalURL:  url,
 		TargetURL:    url,
 		Dest:         dest,
+		// Branch intentionally omitted from the cmd: line — the
+		// URL-driven `gitmap clone <url>` path (clonenext.go:260,
+		// clonereplace.go:93) shells out to `git clone <url> <dest>`
+		// with NO `-b`, letting git follow the remote default HEAD.
+		// The detected branch is shown on the `branch:` line for
+		// context but must not appear as `-b` in the printed cmd
+		// (would mis-represent the real invocation).
+		//
+		// Non-nil empty CmdExtraArgs is the sentinel that tells
+		// buildCloneCommand "explicit opt-out, do NOT fall back to
+		// in.Branch as the -b value" — see pickCmdBranch.
+		CmdBranch:       "",
+		CmdExtraArgsPre: []string{},
 	})
 }

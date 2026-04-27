@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/render"
@@ -27,6 +28,21 @@ import (
 // CloneTermBlockInput carries the per-repo data every clone command
 // already has on hand. Branch/BranchSource may be empty — the
 // renderer falls back to "(unknown)" so the block shape is stable.
+//
+// Faithfulness contract (audited): the printed `cmd:` line MUST be
+// byte-identical to the argv the executor passes to exec.Command.
+// Each caller controls three override fields to achieve that:
+//
+//   - CmdBranch:        branch passed to `-b` in the printed cmd.
+//                       Empty means "no `-b` flag".
+//   - CmdExtraArgsPre:  literal tokens inserted between `git clone`
+//                       and the `-b` slot. Used by clone-pick for
+//                       `--filter=blob:none --no-checkout` and the
+//                       long-form `--branch X` / `--depth N`.
+//   - CmdExtraArgsPost: literal tokens inserted between the `-b`
+//                       slot and the positional `<url> <dest>` pair.
+//                       Used by clone-from for `--depth=N` (its
+//                       executor places --depth AFTER -b).
 type CloneTermBlockInput struct {
 	Index        int
 	Name         string
@@ -35,6 +51,17 @@ type CloneTermBlockInput struct {
 	OriginalURL  string
 	TargetURL    string
 	Dest         string
+	// CmdBranch overrides which branch (if any) is rendered as `-b`
+	// in the printed cmd. Empty = no `-b` flag, regardless of what
+	// Branch (the display field) holds. Defaults to Branch when the
+	// caller leaves both CmdBranch AND CmdExtraArgs* unset (legacy
+	// fallback for clone-now / clone-pick rows).
+	CmdBranch string
+	// CmdExtraArgsPre are tokens between `git clone` and `-b`.
+	CmdExtraArgsPre []string
+	// CmdExtraArgsPost are tokens between `-b <branch>` and the
+	// positional URL/dest pair.
+	CmdExtraArgsPost []string
 }
 
 // maybePrintCloneTermBlock emits the standardized RepoTermBlock to
@@ -57,7 +84,7 @@ func maybePrintCloneTermBlock(output string, in CloneTermBlockInput) {
 		BranchSource: in.BranchSource,
 		OriginalURL:  in.OriginalURL,
 		TargetURL:    in.TargetURL,
-		CloneCommand: buildCloneCommand(in.TargetURL, in.Dest, in.Branch),
+		CloneCommand: buildCloneCommand(in),
 	}
 	if err := render.RenderRepoTermBlock(os.Stdout, block); err != nil {
 		fmt.Fprintf(os.Stderr,
@@ -66,16 +93,44 @@ func maybePrintCloneTermBlock(output string, in CloneTermBlockInput) {
 	}
 }
 
-// buildCloneCommand returns the exact `git clone` command we would
-// run for the given URL+dest (+optional branch). Mirrors the shape
-// produced by clone-next so users see one command shape regardless
-// of which clone command they invoked.
-func buildCloneCommand(url, dest, branch string) string {
+// buildCloneCommand returns the exact `git clone` command the
+// executor will run. The output is byte-identical to the argv
+// joined with spaces — caller-supplied CmdExtraArgsPre/Post and
+// CmdBranch drive the differences between commands (see file-header
+// faithfulness contract).
+//
+// Branch resolution rule: an explicitly-set CmdBranch wins. If
+// CmdBranch is empty AND neither CmdExtraArgsPre nor CmdExtraArgsPost
+// was passed (both nil), we fall back to in.Branch as the `-b` value
+// — this keeps the original clone-now / clone-pick row callers
+// working without per-call-site churn. Callers that explicitly want
+// NO `-b` (URL-driven clone) set CmdBranch=="" AND pass a non-nil
+// CmdExtraArgsPre (even if empty slice) — see pickCmdBranch.
+func buildCloneCommand(in CloneTermBlockInput) string {
+	parts := []string{constants.GitBin, constants.GitClone}
+	parts = append(parts, in.CmdExtraArgsPre...)
+	branch := pickCmdBranch(in)
 	if len(branch) > 0 {
-		return fmt.Sprintf("%s %s -b %s %s %s",
-			constants.GitBin, constants.GitClone, branch, url, dest)
+		parts = append(parts, constants.GitBranchFlag, branch)
+	}
+	parts = append(parts, in.CmdExtraArgsPost...)
+	parts = append(parts, in.TargetURL, in.Dest)
+
+	return strings.Join(parts, " ")
+}
+
+// pickCmdBranch resolves which branch (if any) to render as `-b`.
+// See buildCloneCommand for the rule. Split out so the rule has one
+// home and a future change (e.g. always-explicit) is one edit.
+func pickCmdBranch(in CloneTermBlockInput) string {
+	if len(in.CmdBranch) > 0 {
+		return in.CmdBranch
+	}
+	// Non-nil CmdExtraArgsPre is the explicit "no -b" sentinel
+	// (URL-driven clone). nil = legacy fallback to in.Branch.
+	if in.CmdExtraArgsPre != nil {
+		return ""
 	}
 
-	return fmt.Sprintf("%s %s %s %s",
-		constants.GitBin, constants.GitClone, url, dest)
+	return in.Branch
 }

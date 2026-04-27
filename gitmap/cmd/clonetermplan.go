@@ -25,6 +25,8 @@ package cmd
 //     because there's no clone progress to interleave with.
 
 import (
+	"fmt"
+
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonenow"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonepick"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
@@ -52,6 +54,7 @@ func printCloneNowTermBlocks(plan clonenow.Plan) {
 			OriginalURL:  url,
 			TargetURL:    url,
 			Dest:         dest,
+			CmdBranch:    row.Branch, // executor only passes -b when row.Branch is set
 		})
 	}
 }
@@ -70,6 +73,18 @@ func pickCloneNowName(row clonenow.Row, dest string) string {
 // plan. clone-pick is always one URL → one block; the destination
 // is plan.DestDir (defaults to "."). Branch is taken from the plan
 // when the user pinned --branch, else discovered via ls-remote.
+//
+// Faithfulness: clone-pick's executor (clonepick/sparse.go
+// gitClonePartial) shells out to:
+//
+//	git clone --filter=blob:none --no-checkout \
+//	    [--branch X] [--depth N] <url> <dest>
+//
+// Note the long-form `--branch` (NOT `-b`) and space-separated
+// `--depth N` (NOT `--depth=N`). To stay byte-identical we bypass
+// the standard `-b` slot (CmdBranch="") and emit ALL pre-positional
+// flags via CmdExtraArgsPre, exactly mirroring buildCloneCommandPreview
+// in clonepick/render.go (which is what the dry-run already prints).
 func printClonePickTermBlock(plan clonepick.Plan) {
 	branch := plan.Branch
 	source := "manifest"
@@ -82,12 +97,31 @@ func printClonePickTermBlock(plan clonepick.Plan) {
 		name = repoNameFromURL(plan.RepoUrl)
 	}
 	maybePrintCloneTermBlock(constants.OutputTerminal, CloneTermBlockInput{
-		Index:        1,
-		Name:         name,
-		Branch:       branch,
-		BranchSource: source,
-		OriginalURL:  plan.RepoUrl,
-		TargetURL:    plan.RepoUrl,
-		Dest:         plan.DestDir,
+		Index:           1,
+		Name:            name,
+		Branch:          branch,
+		BranchSource:    source,
+		OriginalURL:     plan.RepoUrl,
+		TargetURL:       plan.RepoUrl,
+		Dest:            plan.DestDir,
+		CmdBranch:       "", // explicit opt-out: clone-pick uses --branch (long form)
+		CmdExtraArgsPre: clonePickCmdPre(plan),
 	})
+}
+
+// clonePickCmdPre assembles the literal pre-positional flag tokens
+// for clone-pick's printed cmd, in the exact order
+// gitClonePartial appends them. plan.Branch (NOT the detected
+// fallback) drives --branch — same rule as the executor.
+func clonePickCmdPre(plan clonepick.Plan) []string {
+	parts := []string{"--filter=blob:none", "--no-checkout"}
+	if len(plan.Branch) > 0 {
+		parts = append(parts, "--branch", plan.Branch)
+	}
+	if plan.Depth > 0 {
+		parts = append(parts, "--depth", fmt.Sprintf("%d", plan.Depth))
+	}
+
+	return parts
+}
 }
