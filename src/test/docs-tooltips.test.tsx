@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -343,5 +343,71 @@ describe("DocsTooltip — aria-label injection scope", () => {
     expect(screen.getByTestId("real").getAttribute("aria-label")).toBe(
       "explicit aria",
     );
+  });
+});
+
+// Real users routinely switch between pointer and keyboard mid-task
+// (hover → tab away → tab back → hover again). Radix Tooltip tracks
+// open state per-trigger and per-event-source; a regression in our
+// wrapper / Slot composition could leave the tooltip stuck open,
+// stuck closed, or mis-targeted after a mode switch. This suite
+// pins down the round-trip: hover → unhover → focus → blur → hover.
+describe("DocsTooltip — interaction mode switching", () => {
+  beforeEach(() => cleanup());
+
+  const isOpen = (triggerName: string) => {
+    const tips = screen.queryAllByRole("tooltip");
+    return tips.some((t) =>
+      (t.textContent ?? "").toLowerCase().includes(triggerName.toLowerCase()),
+    );
+  };
+
+  it("re-opens correctly when alternating hover and focus on the same trigger", async () => {
+    const user = userEvent.setup();
+    renderDocsChrome();
+    const trigger = screen.getByLabelText("Toggle sidebar");
+
+    // The contract under test is "no broken state after switching
+    // interaction modes" — NOT the precise async close timing of
+    // Radix between steps (which is debounced and varies by jsdom
+    // pointer simulation). We assert the tooltip is OPEN after each
+    // opener event and OPEN at the end of the full round-trip.
+
+    // 1. Hover opens.
+    await user.hover(trigger);
+    await waitFor(() => expect(isOpen("Toggle sidebar")).toBe(true));
+
+    // 2. Pointer leaves, then keyboard focus takes over.
+    await user.unhover(trigger);
+    trigger.focus();
+    await waitFor(() => expect(isOpen("Toggle sidebar")).toBe(true));
+
+    // 3. Blur, then hover takes over again — proves no stuck
+    //    listeners or detached refs from the focus round-trip.
+    trigger.blur();
+    await user.hover(trigger);
+    await waitFor(() => expect(isOpen("Toggle sidebar")).toBe(true));
+  });
+
+  it("does not leave a stale tooltip open when focus moves between two triggers", async () => {
+    const user = userEvent.setup();
+    renderDocsChrome();
+    const sidebar = screen.getByLabelText("Toggle sidebar");
+    const dark = screen.getByLabelText("Dark theme");
+
+    // Hover the first, then keyboard-focus the second. Only the
+    // second tooltip should be open at the end of the sequence.
+    await user.hover(sidebar);
+    await screen.findAllByRole("tooltip");
+    expect(isOpen("Toggle sidebar")).toBe(true);
+
+    await user.unhover(sidebar);
+    dark.focus();
+    await screen.findAllByRole("tooltip");
+
+    await waitFor(() => {
+      expect(isOpen("Dark theme")).toBe(true);
+      expect(isOpen("Toggle sidebar")).toBe(false);
+    });
   });
 });
