@@ -242,7 +242,10 @@ describe("DocsTooltip — non-element children fallback", () => {
     const wrapper = screen.getByText("just text");
     expect(wrapper.tagName).toBe("SPAN");
     expect(wrapper.getAttribute("tabindex")).toBe("0");
-    expect(wrapper.getAttribute("aria-label")).toBe("fallback label");
+    // aria-label is intentionally NOT injected onto the fallback
+    // wrapper (see the dedicated injection-scope suite below) —
+    // callers using non-element children must own their own naming.
+    expect(wrapper.getAttribute("aria-label")).toBeNull();
 
     // Tab from document.body lands on the only focusable node.
     await user.tab();
