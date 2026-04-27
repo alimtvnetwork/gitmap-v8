@@ -63,6 +63,7 @@ with the trigger ON but the allow-update gate OFF. Writers using
 `AllowUpdateAfterDeterminism` are exercised 3× and compared
 byte-for-byte; if any drift is found, exit 1 BEFORE pass 1, so no
 fixture is rewritten with non-deterministic bytes.
+
 ## Examples
 
 Regenerate the clone-from JSON report goldens and verify:
