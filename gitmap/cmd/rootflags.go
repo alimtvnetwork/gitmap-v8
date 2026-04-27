@@ -202,7 +202,6 @@ func parseCloneFlags(args []string) CloneFlags {
 		MaxConcurrency:    *maxConcFlag,
 		Output:            *outputFlag,
 		VerifyCmdFaithful: *verifyFlag,
-		PlaceholderEnd:    false,
 		PrintCloneArgv:    *printArgvFlag,
 	}
 }
