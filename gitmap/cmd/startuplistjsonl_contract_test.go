@@ -181,7 +181,7 @@ func TestStartupListJSONL_SpecialCharsMatchJSON(t *testing.T) {
 	if len(fromJSON) != 1 {
 		t.Fatalf("want 1 json record, got %d", len(fromJSON))
 	}
-	for _, k := range []string{"name", "path", "exec"} {
+	for _, k := range assertSchemaKeysSlice(t, "startup-list") {
 		if fromJSONL[k] != fromJSON[0][k] {
 			t.Fatalf("key %q diverges: jsonl=%v json=%v",
 				k, fromJSONL[k], fromJSON[0][k])
