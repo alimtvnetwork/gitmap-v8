@@ -22,9 +22,9 @@ package cmd
 //     when there are zero entries.
 //
 // To intentionally regenerate after a deliberate schema change,
-// update expectedStartupListJSONSchema in startuplistjson_snapshot_
-// test.go AND expectedStartupListCSVHeader below — the two MUST
-// agree, and the cross-format test below enforces that invariant.
+// bump cmd/testdata/schemas/startup-list.vN.json (or run with
+// GITMAP_UPDATE_SCHEMA=startup-list). The CSV header check below
+// reads the same registry entry, so JSON+CSV cannot drift apart.
 
 import (
 	"bytes"
@@ -120,9 +120,10 @@ func TestStartupListCSVContract_HeaderMatchesJSONSchema(t *testing.T) {
 		t.Fatalf("empty parse — expected at least header row")
 	}
 	header := rows[0]
-	if !equalStringSlices(header, expectedStartupListJSONSchema) {
+	wantHeader := assertSchemaKeysSlice(t, "startup-list")
+	if !equalStringSlices(header, wantHeader) {
 		t.Fatalf("CSV header drifted from JSON schema\n  json: %v\n  csv:  %v",
-			expectedStartupListJSONSchema, header)
+			wantHeader, header)
 	}
 }
 

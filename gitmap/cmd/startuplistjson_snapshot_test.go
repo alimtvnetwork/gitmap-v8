@@ -30,11 +30,15 @@ import (
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/startup"
 )
 
-// expectedStartupListJSONSchema pins the EXACT key set and order
-// every object in the array must have. Adding a field to
-// startupListJSONKey* in startuplistrender.go without also adding it
-// here is the regression this test exists to catch.
-var expectedStartupListJSONSchema = []string{"name", "path", "exec"}
+// Schema for `gitmap startup-list --format=json|jsonl|csv` rows is
+// now sourced from the versioned schema registry (see
+// cmd/testdata/schemas/startup-list.vN.json + assertSchemaKeysArray
+// in schemaregistry_assert_test.go).
+//
+// To add a key (e.g. `enabled`): create startup-list.v2.json with
+// the new key list, OR run `GITMAP_UPDATE_SCHEMA=startup-list go
+// test ./cmd/...` once and acknowledge with `-accept-schema=
+// startup-list@v2` thereafter.
 
 // TestStartupListJSONSnapshot_SchemaIsLocked is the headline schema
 // guarantee. Encodes a representative multi-entry list, then asserts
@@ -56,7 +60,7 @@ func TestStartupListJSONSnapshot_SchemaIsLocked(t *testing.T) {
 	if err := encodeStartupListJSON(&buf, entries); err != nil {
 		t.Fatalf("encode: %v", err)
 	}
-	assertEveryObjectKeysExact(t, buf.Bytes(), expectedStartupListJSONSchema)
+	assertSchemaKeysArray(t, buf.Bytes(), "startup-list")
 }
 
 // TestStartupListJSONSnapshot_DeterministicAcrossRuns proves the
