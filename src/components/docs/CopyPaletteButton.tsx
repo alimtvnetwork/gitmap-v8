@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, ClipboardCopy } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // CSS custom properties that make up the active VS Code-inspired palette.
 // Read live from the document so the snapshot always reflects what's rendered.
@@ -65,26 +66,28 @@ export function CopyPaletteButton() {
     }
   };
 
+  const tooltipText = copied
+    ? "Copied!"
+    : `Copy ${themeLabel} CSS variables to clipboard`;
+
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      title={`Copy ${themeLabel} CSS variables to clipboard`}
-      aria-label={`Copy ${themeLabel} CSS variables to clipboard`}
-      className="ml-2 inline-flex items-center gap-1.5 rounded-sm border border-border bg-card px-2 py-0.5 text-[11px] font-sans font-medium text-muted-foreground shadow-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card"
-    >
-      {copied ? (
-        <>
-          <Check className="h-3 w-3" aria-hidden="true" />
-          Copied
-        </>
-      ) : (
-        <>
-          <ClipboardCopy className="h-3 w-3" aria-hidden="true" />
-          Copy palette
-        </>
-      )}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleCopy}
+          aria-label={`Copy ${themeLabel} CSS variables to clipboard`}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <ClipboardCopy className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{tooltipText}</TooltipContent>
+    </Tooltip>
   );
 }
 
