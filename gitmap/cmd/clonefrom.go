@@ -165,19 +165,45 @@ func runCloneFromExecute(plan clonefrom.Plan, cfg cloneFromFlags) {
 		hook = printCloneFromTermBlockRow
 	}
 	results := clonefrom.ExecuteWithHooks(plan, "", progress, hook)
-	reportPath := ""
-	if !cfg.noReport {
-		if p, err := clonefrom.WriteReport(results); err == nil {
-			reportPath = p
-		} else {
+	csvPath, jsonPath := writeCloneFromReports(results, cfg)
+	if cfg.output == constants.OutputTerminal {
+		if err := clonefrom.RenderSummaryTerminal(os.Stdout, results, csvPath, jsonPath); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
-	}
-	if err := clonefrom.RenderSummary(os.Stdout, results, reportPath); err != nil {
+	} else if err := clonefrom.RenderSummary(os.Stdout, results, csvPath); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	maybeExitOnCmdFaithfulMismatch()
 	os.Exit(cloneFromExitCode(results))
+}
+
+// writeCloneFromReports persists the CSV report (always, unless
+// --no-report) and additionally the JSON report when --output
+// terminal is set (the terminal summary surfaces both paths).
+// Returns ("", "") when --no-report skips both. Failures are logged
+// to stderr but never abort — clones already happened, the reports
+// are bonus.
+func writeCloneFromReports(results []clonefrom.Result, cfg cloneFromFlags) (string, string) {
+	if cfg.noReport {
+		return "", ""
+	}
+	csvPath := ""
+	if p, err := clonefrom.WriteReport(results); err == nil {
+		csvPath = p
+	} else {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	if cfg.output != constants.OutputTerminal {
+		return csvPath, ""
+	}
+	jsonPath := ""
+	if p, err := clonefrom.WriteReportJSON(results); err == nil {
+		jsonPath = p
+	} else {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	return csvPath, jsonPath
 }
 
 // cloneFromExitCode returns 1 if any row failed, else 0. Skipped
