@@ -214,14 +214,19 @@ func startsWith(s, prefix string) bool {
 // flag form we don't bother decoding.
 func extractMaxDepthForLog(scanArgs []string) string {
 	want := constants.FlagScanMaxDepth
+	prefixDouble := "--" + want + "="
+	prefixSingle := "-" + want + "="
 	for i, a := range scanArgs {
+		// Space form: `--max-depth N` / `-max-depth N`. The bare token
+		// must end the inspection — falling through to the inline-form
+		// check would mis-classify a malformed `--max-depth` (no value)
+		// as a non-match and let the loop wander into unrelated flags.
 		if a == "--"+want || a == "-"+want {
 			if i+1 < len(scanArgs) {
 				return scanArgs[i+1]
 			}
+			return "auto"
 		}
-		prefixDouble := "--" + want + "="
-		prefixSingle := "-" + want + "="
 		if startsWith(a, prefixDouble) {
 			return a[len(prefixDouble):]
 		}
