@@ -27,7 +27,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -125,63 +124,13 @@ func skipUntilFirstObjectStart(dec *json.Decoder) error {
 	}
 }
 
-// collectObjectKeys reads alternating key / value tokens from an
-// object that's already been opened, returning just the keys in the
-// order they were emitted. Stops at the matching `}`.
-func collectObjectKeys(t *testing.T, dec *json.Decoder) []string {
-	t.Helper()
-	var keys []string
-	for dec.More() {
-		tok, err := dec.Token()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			t.Fatalf("decode token: %v", err)
-		}
-		key, ok := tok.(string)
-		if !ok {
-			t.Fatalf("expected string key, got %T (%v)", tok, tok)
-		}
-		keys = append(keys, key)
-		// Skip the value (which might itself be an object/array we
-		// don't want to descend into for top-level key checks).
-		if err := skipOneValue(dec); err != nil {
-			t.Fatalf("skip value for key %q: %v", key, err)
-		}
-	}
-
-	return keys
-}
-
-// skipOneValue reads exactly one JSON value (scalar, object, or
-// array) so the decoder is positioned at the next key. Uses
-// json.RawMessage as the cheapest "consume one value" primitive in
-// the stdlib — it parses the value but discards the AST.
-func skipOneValue(dec *json.Decoder) error {
-	var raw json.RawMessage
-
-	return dec.Decode(&raw)
-}
-
-// equalStringSlices compares slices with an explicit length-then-
-// element loop. Faster than reflect.DeepEqual on the test hot path
-// and the failure message in the caller is more actionable than
-// reflect's auto-generated one.
-func equalStringSlices(a, b []string) bool {
-	if len(a) != len(b) {
-
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-
-			return false
-		}
-	}
-
-	return true
-}
+// collectObjectKeys, equalStringSlices, and skipOneValue have been
+// consolidated into jsonsnapshot_helpers_test.go (canonical home
+// for shared JSON-test helpers). This file keeps only the helpers
+// unique to the contract suite. trimTrailingNewline stays here
+// because it's the only file that needs trailing-newline
+// normalization (snapshot helpers rely on golden files that
+// already have a stable terminator).
 
 // trimTrailingNewline normalizes encoder output for byte comparison.
 // json.Encoder.Encode always appends a trailing '\n'; some golden
