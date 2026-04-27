@@ -96,23 +96,27 @@ func collectWriterRuns(writer WriterFn) ([][]byte, error) {
 	return out, nil
 }
 
+// nonDeterministicWriterMsgFmt is the failure template used when a
+// writer's bytes diverge across runs. Centralized so the message
+// stays one source of truth and assertAllRunsEqualOn fits the
+// 15-line function budget.
+const nonDeterministicWriterMsgFmt = "goldenguard: writer %q is non-deterministic — " +
+	"run 1 vs run %d differ (%d vs %d bytes).\n" +
+	"  run 1 head: %s\n  run %d head: %s\n" +
+	"Fix the writer (likely culprits: map iteration, time.Now, " +
+	"randomness, locale-dependent formatting) BEFORE regenerating fixtures."
+
 // assertAllRunsEqualOn compares every run after the first against
-// run[0]. The first divergence triggers Fatalf with a snippet of
-// each side so the writer's drift is visible without dumping the
-// entire blob into the test log. Takes a fataler so unit tests can
-// inject a fake.
+// run[0]. The first divergence triggers Fatalf via the centralized
+// failure template above. Takes a fataler so unit tests can inject
+// a fake.
 func assertAllRunsEqualOn(t fataler, label string, runs [][]byte) {
 	t.Helper()
 	for i := 1; i < len(runs); i++ {
 		if bytes.Equal(runs[0], runs[i]) {
 			continue
 		}
-		t.Fatalf("goldenguard: writer %q is non-deterministic — "+
-			"run 1 vs run %d differ (%d vs %d bytes).\n"+
-			"  run 1 head: %s\n  run %d head: %s\n"+
-			"Fix the writer (likely culprits: map iteration, "+
-			"time.Now, randomness, locale-dependent formatting) "+
-			"BEFORE regenerating fixtures.",
+		t.Fatalf(nonDeterministicWriterMsgFmt,
 			label, i+1, len(runs[0]), len(runs[i]),
 			snippet(runs[0]), i+1, snippet(runs[i]))
 		return
