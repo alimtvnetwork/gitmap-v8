@@ -25,6 +25,8 @@ package cmd
 //     because there's no clone progress to interleave with.
 
 import (
+	"fmt"
+
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonenow"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonepick"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
