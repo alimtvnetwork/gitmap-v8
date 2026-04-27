@@ -150,3 +150,81 @@ describe("docs tooltip wiring — hover opener", () => {
     expect(matched).toBe(true);
   });
 });
+
+// DocsTooltip wraps `children` with TooltipTrigger asChild, but it
+// also tries to inject an aria-label onto the child via cloneElement.
+// The injection helper must short-circuit when the child is NOT a
+// single valid React element — otherwise React would throw at render
+// time. This suite locks in that contract: every non-element child
+// shape renders without throwing and the tooltip body still appears
+// when a focusable descendant receives focus. If someone refactors
+// `withAccessibleName` and forgets the isValidElement guard, these
+// tests fail loudly instead of crashing the whole docs chrome.
+import { DocsTooltip } from "@/components/docs/DocsTooltip";
+
+const renderTooltip = (node: React.ReactNode) =>
+  render(
+    <TooltipProvider delayDuration={0} skipDelayDuration={0}>
+      <DocsTooltip label="fallback label">{node}</DocsTooltip>
+    </TooltipProvider>,
+  );
+
+describe("DocsTooltip — non-element children fallback", () => {
+  beforeEach(() => cleanup());
+
+  it("does not throw when the child is a plain string", () => {
+    expect(() => renderTooltip("just text")).not.toThrow();
+    expect(screen.getByText("just text")).toBeTruthy();
+  });
+
+  it("does not throw when the child is a number", () => {
+    expect(() => renderTooltip(42)).not.toThrow();
+  });
+
+  it("does not throw when the child is null", () => {
+    expect(() => renderTooltip(null)).not.toThrow();
+  });
+
+  it("does not throw when there are multiple children (array)", () => {
+    expect(() =>
+      renderTooltip([
+        <span key="a">a</span>,
+        <button key="b" type="button">
+          b
+        </button>,
+      ]),
+    ).not.toThrow();
+  });
+
+  it("does not throw when the child is a fragment", () => {
+    expect(() =>
+      renderTooltip(
+        <>
+          <span>x</span>
+          <span>y</span>
+        </>,
+      ),
+    ).not.toThrow();
+  });
+
+  it("still surfaces the tooltip body on focus of a focusable descendant", async () => {
+    // Even when we cannot inject aria-label (multiple children),
+    // Radix should still open the tooltip on focus of the trigger
+    // subtree. This proves the fallback degrades gracefully.
+    renderTooltip(
+      <>
+        <button type="button" aria-label="inner btn">
+          inner
+        </button>
+        <span>extra</span>
+      </>,
+    );
+    const btn = screen.getByLabelText("inner btn");
+    btn.focus();
+    const tips = await screen.findAllByRole("tooltip");
+    const matched = tips.some((t) =>
+      (t.textContent ?? "").includes("fallback label"),
+    );
+    expect(matched).toBe(true);
+  });
+});
