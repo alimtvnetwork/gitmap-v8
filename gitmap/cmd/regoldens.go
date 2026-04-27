@@ -48,11 +48,23 @@ func runRegoldens(args []string) {
 		fmt.Fprintln(os.Stderr, constants.ErrRegoldensMissingPat)
 		os.Exit(2)
 	}
+	validateDiffMode(cfg.diffMode)
 	if cfg.isDryRun {
 		emitRegoldensDryRun(cfg)
 		return
 	}
 	executeRegoldens(cfg)
+}
+
+// validateDiffMode rejects unknown --diff values up front so the
+// orchestrator can trust cfg.diffMode is "", "short", or "full".
+func validateDiffMode(mode string) {
+	if mode == "" || mode == constants.RegoldensDiffModeShort ||
+		mode == constants.RegoldensDiffModeFull {
+		return
+	}
+	fmt.Fprintf(os.Stderr, constants.ErrRegoldensDiffMode+"\n", mode)
+	os.Exit(2)
 }
 
 // parseRegoldensFlags wires the flag set. Defaults match the
