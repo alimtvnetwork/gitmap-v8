@@ -167,11 +167,10 @@ func readNumstatCounts() (map[string][2]int, error) {
 // renamedFrom is preserved from the porcelain entry.
 func mergeStatusAndNumstat(statuses map[string]goldenDiffEntry, counts map[string][2]int) []goldenDiffEntry {
 	entries := make([]goldenDiffEntry, 0, len(statuses))
-	for path, e := range statuses {
-		c := counts[path]
+	for _, e := range statuses {
+		c := counts[e.path]
 		e.added = c[0]
 		e.deleted = c[1]
-		_ = path
 		entries = append(entries, e)
 	}
 	sortGoldenDiffEntries(entries)
