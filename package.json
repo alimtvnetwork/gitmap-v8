@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:aria-scope": "vitest run src/test/docs-tooltips.test.tsx -t \"aria-label injection scope\" --reporter=verbose"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
