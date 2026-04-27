@@ -177,6 +177,9 @@ func readNumstatCounts() (map[string][2]int, error) {
 		if len(fields) < 3 {
 			continue
 		}
+		if !isGoldenFixturePath(fields[2]) {
+			continue
+		}
 		added, _ := strconv.Atoi(fields[0])   // "-" (binary) becomes 0
 		deleted, _ := strconv.Atoi(fields[1]) //nolint:errcheck // intentional 0 fallback
 		result[fields[2]] = [2]int{added, deleted}
