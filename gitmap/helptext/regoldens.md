@@ -116,7 +116,7 @@ gitmap rg --pattern TestCloneFromReportJSON_Golden \
 |---|---|
 | 0 | Both passes succeeded (or `--dry-run`/`--skip-verify` completed). |
 | 1 | Pass 1 (regenerate) or pass 2 (verify) failed — see stderr. |
-| 2 | Bad CLI usage (missing `--pattern`). |
+| 2 | Bad CLI usage (missing `--pattern`, or invalid `--diff` value). |
 
 ## After regenerating
 
