@@ -47,17 +47,18 @@ func TestSortGoldenDiffEntries_OrdersByStatusThenPath(t *testing.T) {
 }
 
 func TestGoldenDiffTotals_AccumulateMixedStatuses(t *testing.T) {
-	totals := goldenDiffTotals{count: 3}
+	totals := goldenDiffTotals{count: 4}
 	totals.accumulate(goldenDiffEntry{status: "A", added: 10, deleted: 0})
 	totals.accumulate(goldenDiffEntry{status: "M", added: 4, deleted: 7})
 	totals.accumulate(goldenDiffEntry{status: "D", added: 0, deleted: 12})
-	assertTotalsEqual(t, totals, 1, 1, 1, 14, 19)
+	totals.accumulate(goldenDiffEntry{status: "R", added: 1, deleted: 1})
+	assertTotalsEqual(t, totals, 1, 1, 1, 1, 15, 20)
 }
 
 // assertTotalsEqual centralizes the multi-field comparison so the
 // test bodies above stay one-purpose and well under 15 lines.
 func assertTotalsEqual(t *testing.T, totals goldenDiffTotals,
-	wantAdded, wantModified, wantDeleted, wantLinesAdded, wantLinesDeleted int,
+	wantAdded, wantModified, wantRenamed, wantDeleted, wantLinesAdded, wantLinesDeleted int,
 ) {
 	t.Helper()
 	mismatches := []string{}
@@ -66,6 +67,9 @@ func assertTotalsEqual(t *testing.T, totals goldenDiffTotals,
 	}
 	if totals.modified != wantModified {
 		mismatches = append(mismatches, "modified")
+	}
+	if totals.renamed != wantRenamed {
+		mismatches = append(mismatches, "renamed")
 	}
 	if totals.deleted != wantDeleted {
 		mismatches = append(mismatches, "deleted")

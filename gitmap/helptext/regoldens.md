@@ -18,7 +18,7 @@ into a single command, so contributors cannot accidentally:
 ## Synopsis
 
 ```
-gitmap regoldens --pattern <TestPattern> [--package <pkg>] [--skip-verify] [--dry-run] [--diff]
+gitmap regoldens --pattern <TestPattern> [--package <pkg>] [--skip-verify] [--dry-run] [--diff=short|full]
 gitmap rg --pattern <TestPattern>                               # short alias
 ```
 
@@ -30,7 +30,7 @@ gitmap rg --pattern <TestPattern>                               # short alias
 | `--package` | `./...`    | Go package selector. Scope tightly to avoid touching unrelated fixtures. |
 | `--skip-verify` | false  | Skip the determinism verification pass. **Not recommended** — the verify pass is the whole point. |
 | `--dry-run` | false       | Print the `go test` invocations that would run, then exit 0. |
-| `--diff` | false          | After pass 1, print a concise per-file summary of which `testdata/` goldens changed (status + line counts) before pass 2 runs. |
+| `--diff=<mode>` | (off)  | After pass 1, print a per-file summary of which `testdata/` goldens changed. `short` = one terse line per file (status + path). `full` = adds `+adds / -deletes` line counts, rename source paths, and renamed totals. Use `--diff=short` or `--diff=full`. |
 
 ## Behavior
 
@@ -51,20 +51,23 @@ If pass 2 fails, the writer is non-deterministic (map iteration
 order, timestamps, locale-dependent floats). Fix the writer — do
 NOT re-run with `--skip-verify`.
 
-**Diff summary (`--diff`).** Between pass 1 and pass 2, prints a
-concise per-file report of every changed file under any
-`testdata/` directory:
+**Diff summary (`--diff=short|full`).** Between pass 1 and pass 2,
+prints a per-file report of changed files under any `testdata/`
+directory. `short` = `status path` only. `full` = adds `(+adds / -dels)`,
+rename source lines (`↳ renamed from …`), and a `renamed` total.
 
 ```
-▸ Golden diff summary (testdata/ files touched by pass 1):
-  M  gitmap/clonefrom/testdata/clonefrom_report_canonical.json  (+3 / -1)
-  A  gitmap/formatter/testdata/scan_compact_v2.txt              (+42 / -0)
-  ─ 2 file(s) changed: 1 added, 1 modified, 0 deleted (+45 / -1 total)
+▸ Golden diff summary (testdata/ files touched by pass 1) [mode=full]:
+  M  gitmap/clonefrom/testdata/report_canonical.json  (+3 / -1)
+  A  gitmap/formatter/testdata/scan_compact_v2.txt    (+42 / -0)
+  R  gitmap/formatter/testdata/scan_v3.txt            (+0 / -0)
+      ↳ renamed from gitmap/formatter/testdata/scan_v2.txt
+  ─ 3 file(s) changed: 1 added, 1 modified, 1 renamed, 0 deleted (+45 / -1 total)
 ```
 
 The summary fires whether pass 1 passed or failed (so partial
-fixture writes are visible before the process exits) and is
-skipped gracefully when the working tree is not a git repository.
+fixture writes are visible) and is skipped when the working tree
+is not a git repository.
 
 ## Examples
 
@@ -91,7 +94,10 @@ Regenerate and inspect which goldens changed before verification:
 
 ```
 gitmap rg --pattern TestCloneFromReportJSON_Golden \
-  --package ./gitmap/clonefrom/ --diff
+  --package ./gitmap/clonefrom/ --diff=short
+
+gitmap rg --pattern TestCloneFromReportJSON_Golden \
+  --package ./gitmap/clonefrom/ --diff=full
 ```
 
 ## Exit codes
@@ -100,7 +106,7 @@ gitmap rg --pattern TestCloneFromReportJSON_Golden \
 |---|---|
 | 0 | Both passes succeeded (or `--dry-run`/`--skip-verify` completed). |
 | 1 | Pass 1 (regenerate) or pass 2 (verify) failed — see stderr. |
-| 2 | Bad CLI usage (missing `--pattern`). |
+| 2 | Bad CLI usage (missing `--pattern`, or invalid `--diff` value). |
 
 ## After regenerating
 

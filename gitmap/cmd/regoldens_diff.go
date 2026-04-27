@@ -21,11 +21,13 @@ import (
 // goldenDiffEntry captures one changed testdata/ file. Status uses
 // the porcelain letter set: A (added/untracked), M (modified),
 // D (deleted), R (renamed), ? (untracked — normalized to A).
+// renamedFrom is populated only for R entries (full mode).
 type goldenDiffEntry struct {
-	status   string
-	path     string
-	added    int
-	deleted  int
+	status      string
+	path        string
+	renamedFrom string
+	added       int
+	deleted     int
 }
 
 // goldenDiffPathFragment scopes both `git status` and `git diff`
@@ -33,10 +35,11 @@ type goldenDiffEntry struct {
 // because regenerate passes should only touch those paths.
 const goldenDiffPathFragment = "testdata/"
 
-// emitGoldenDiffSummary prints the post-pass-1 diff summary. Errors
-// from git invocations are surfaced (zero-swallow policy) but never
-// fatal — the diff is informational and must not block pass 2.
-func emitGoldenDiffSummary() {
+// emitGoldenDiffSummary prints the post-pass-1 diff summary in the
+// requested mode ("short" | "full"). Errors from git invocations are
+// surfaced (zero-swallow policy) but never fatal — the diff is
+// informational and must not block pass 2.
+func emitGoldenDiffSummary(mode string) {
 	if !isGitWorkingTree() {
 		fmt.Fprint(os.Stderr, constants.MsgRegoldensDiffSkipped)
 		return
@@ -46,12 +49,12 @@ func emitGoldenDiffSummary() {
 		fmt.Fprintf(os.Stderr, "regoldens: diff summary failed: %v\n", err)
 		return
 	}
-	fmt.Fprint(os.Stdout, constants.MsgRegoldensDiffHeader)
+	fmt.Fprintf(os.Stdout, constants.MsgRegoldensDiffHeader, mode)
 	if len(entries) == 0 {
 		fmt.Fprint(os.Stdout, constants.MsgRegoldensDiffNoChanges)
 		return
 	}
-	printGoldenDiffEntries(entries)
+	printGoldenDiffEntries(entries, mode)
 }
 
 // isGitWorkingTree returns true when the current directory is inside
@@ -81,26 +84,41 @@ func collectGoldenDiffEntries() ([]goldenDiffEntry, error) {
 	return mergeStatusAndNumstat(statuses, numstat), nil
 }
 
-// readPorcelainStatuses returns a map of testdata/ path -> status
-// letter from `git status --porcelain`. Untracked entries (`??`)
-// are normalized to "A" (added) for cleaner display.
-func readPorcelainStatuses() (map[string]string, error) {
+// readPorcelainStatuses returns a map of testdata/ path -> entry
+// (status letter + optional renamedFrom) from `git status --porcelain`.
+// Untracked entries (`??`) are normalized to "A" (added).
+func readPorcelainStatuses() (map[string]goldenDiffEntry, error) {
 	out, err := runGitCapture("status", "--porcelain", "--", "*"+goldenDiffPathFragment+"*")
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[string]string)
+	result := make(map[string]goldenDiffEntry)
 	for _, line := range strings.Split(out, "\n") {
 		if len(line) < 4 {
 			continue
 		}
-		path := strings.TrimSpace(line[3:])
+		path, from := splitPorcelainPath(line[3:])
 		if !strings.Contains(path, goldenDiffPathFragment) {
 			continue
 		}
-		result[path] = normalizePorcelainStatus(strings.TrimSpace(line[:2]))
+		result[path] = goldenDiffEntry{
+			status:      normalizePorcelainStatus(strings.TrimSpace(line[:2])),
+			path:        path,
+			renamedFrom: from,
+		}
 	}
 	return result, nil
+}
+
+// splitPorcelainPath extracts (newPath, oldPath) from the path
+// portion of a porcelain status line. Renames are formatted as
+// "old -> new"; everything else is a plain path. Whitespace is
+// trimmed in either branch.
+func splitPorcelainPath(raw string) (newPath, oldPath string) {
+	if idx := strings.Index(raw, " -> "); idx >= 0 {
+		return strings.TrimSpace(raw[idx+4:]), strings.TrimSpace(raw[:idx])
+	}
+	return strings.TrimSpace(raw), ""
 }
 
 // normalizePorcelainStatus collapses git's two-letter porcelain
@@ -114,11 +132,11 @@ func normalizePorcelainStatus(code string) string {
 	if strings.Contains(code, "D") {
 		return "D"
 	}
-	if strings.Contains(code, "A") {
-		return "A"
-	}
 	if strings.Contains(code, "R") {
 		return "R"
+	}
+	if strings.Contains(code, "A") {
+		return "A"
 	}
 	return "M"
 }
@@ -146,13 +164,14 @@ func readNumstatCounts() (map[string][2]int, error) {
 
 // mergeStatusAndNumstat joins the two maps by path, defaulting line
 // counts to 0 for added/deleted/untracked files (numstat omits them).
-func mergeStatusAndNumstat(statuses map[string]string, counts map[string][2]int) []goldenDiffEntry {
+// renamedFrom is preserved from the porcelain entry.
+func mergeStatusAndNumstat(statuses map[string]goldenDiffEntry, counts map[string][2]int) []goldenDiffEntry {
 	entries := make([]goldenDiffEntry, 0, len(statuses))
-	for path, status := range statuses {
-		c := counts[path]
-		entries = append(entries, goldenDiffEntry{
-			status: status, path: path, added: c[0], deleted: c[1],
-		})
+	for _, e := range statuses {
+		c := counts[e.path]
+		e.added = c[0]
+		e.deleted = c[1]
+		entries = append(entries, e)
 	}
 	sortGoldenDiffEntries(entries)
 	return entries

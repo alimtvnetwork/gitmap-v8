@@ -25,8 +25,11 @@ type regoldensFlags struct {
 	pkg        string
 	skipVerify bool
 	isDryRun   bool
-	showDiff   bool
+	diffMode   string // "" (off), "short", or "full"
 }
+
+// hasDiff reports whether any diff summary was requested.
+func (c regoldensFlags) hasDiff() bool { return c.diffMode != "" }
 
 // goTestUpdateEnvValue mirrors goldenguard.allowUpdateValue (which
 // is unexported). Both gate env vars must equal "1" to unlock pass 1.
@@ -45,12 +48,15 @@ func runRegoldens(args []string) {
 		fmt.Fprintln(os.Stderr, constants.ErrRegoldensMissingPat)
 		os.Exit(2)
 	}
+	validateDiffMode(cfg.diffMode)
 	if cfg.isDryRun {
 		emitRegoldensDryRun(cfg)
 		return
 	}
 	executeRegoldens(cfg)
 }
+
+// validateDiffMode lives in regoldens_validate.go (file-length cap).
 
 // parseRegoldensFlags wires the flag set. Defaults match the
 // constants block so changing a default is a one-line edit there.
@@ -79,7 +85,7 @@ func bindRegoldensFlags(fs *flag.FlagSet, cfg *regoldensFlags) {
 		constants.FlagDescRegoldensSkipVerify)
 	fs.BoolVar(&cfg.isDryRun, constants.FlagRegoldensDryRun, false,
 		constants.FlagDescRegoldensDryRun)
-	fs.BoolVar(&cfg.showDiff, constants.FlagRegoldensDiff, false,
+	fs.StringVar(&cfg.diffMode, constants.FlagRegoldensDiff, "",
 		constants.FlagDescRegoldensDiff)
 }
 
@@ -94,8 +100,8 @@ func emitRegoldensDryRun(cfg regoldensFlags) {
 	), " ")
 	pass2 := strings.Join(goTestArgv(cfg), " ")
 	fmt.Fprintf(os.Stdout, constants.MsgRegoldensDryRun, pass1, pass2)
-	if cfg.showDiff {
-		fmt.Fprintln(os.Stdout, "  (--diff: golden diff summary would print between passes)")
+	if cfg.hasDiff() {
+		fmt.Fprintf(os.Stdout, "  (--diff=%s: golden diff summary would print between passes)\n", cfg.diffMode)
 	}
 }
 
