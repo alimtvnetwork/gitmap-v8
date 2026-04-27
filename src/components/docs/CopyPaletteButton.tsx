@@ -76,7 +76,7 @@ export function CopyPaletteButton() {
         <button
           type="button"
           onClick={handleCopy}
-          aria-label={`Copy ${themeLabel} CSS variables to clipboard`}
+          aria-label={`Copy ${themeLabel} theme palette to clipboard`}
           className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card"
         >
           {copied ? (
