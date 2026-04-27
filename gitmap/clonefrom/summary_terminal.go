@@ -21,7 +21,6 @@ package clonefrom
 //      single reportPath argument can't carry both.
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
