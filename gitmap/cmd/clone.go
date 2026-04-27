@@ -71,7 +71,7 @@ func runClone(args []string) {
 	}
 
 	if isDirectURL(cf.Source) {
-		executeDirectClone(cf.Source, cf.FolderName, cf.GHDesktop, cf.NoReplace)
+		executeDirectClone(cf.Source, cf.FolderName, cf.GHDesktop, cf.NoReplace, cf.Output)
 
 		return
 	}
