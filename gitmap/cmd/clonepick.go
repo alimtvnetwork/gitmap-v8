@@ -30,9 +30,10 @@ import (
 func runClonePick(args []string) {
 	checkHelp("clone-pick", args)
 
-	rawURL, rawPaths, flags, output, verify := parseClonePickFlags(args)
-	setCmdFaithfulVerify(verify)
-	plan, err := clonepick.ParseArgs(rawURL, rawPaths, flags)
+	parsed := parseClonePickFlags(args)
+	setCmdFaithfulVerify(parsed.VerifyCmdFaithful)
+	setCmdPrintArgv(parsed.PrintCloneArgv)
+	plan, err := clonepick.ParseArgs(parsed.RawURL, parsed.RawPaths, parsed.Flags)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
@@ -42,7 +43,7 @@ func runClonePick(args []string) {
 		// `--output terminal`: emit the standardized block instead
 		// of the legacy clonepick.Render output. Keeps the per-repo
 		// summary shape consistent across every clone command.
-		if output == constants.OutputTerminal {
+		if parsed.Output == constants.OutputTerminal {
 			printClonePickTermBlock(plan)
 
 			return
@@ -55,10 +56,23 @@ func runClonePick(args []string) {
 		return
 	}
 
-	if output == constants.OutputTerminal {
+	if parsed.Output == constants.OutputTerminal {
 		printClonePickTermBlock(plan)
 	}
 	runClonePickExecute(plan)
+}
+
+// clonePickParsed bundles every output of parseClonePickFlags so a
+// new audit/debug toggle can be added without churning the call
+// site signature each time. Fields are exported because the struct
+// itself stays unexported (cmd-package-internal).
+type clonePickParsed struct {
+	RawURL            string
+	RawPaths          string
+	Flags             clonepick.Flags
+	Output            string
+	VerifyCmdFaithful bool
+	PrintCloneArgv    bool
 }
 
 // parseClonePickFlags binds every clone-pick flag and extracts the
