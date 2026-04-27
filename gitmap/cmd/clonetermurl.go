@@ -52,7 +52,7 @@ func printCloneTermBlockForURL(output string, idx int, url, dest string) {
 		// Non-nil empty CmdExtraArgs is the sentinel that tells
 		// buildCloneCommand "explicit opt-out, do NOT fall back to
 		// in.Branch as the -b value" — see pickCmdBranch.
-		CmdBranch:    "",
-		CmdExtraArgs: []string{},
+		CmdBranch:       "",
+		CmdExtraArgsPre: []string{},
 	})
 }
