@@ -345,3 +345,73 @@ describe("DocsTooltip — aria-label injection scope", () => {
     );
   });
 });
+
+// Real users routinely switch between pointer and keyboard mid-task
+// (hover → tab away → tab back → hover again). Radix Tooltip tracks
+// open state per-trigger and per-event-source; a regression in our
+// wrapper / Slot composition could leave the tooltip stuck open,
+// stuck closed, or mis-targeted after a mode switch. This suite
+// pins down the round-trip: hover → unhover → focus → blur → hover.
+describe("DocsTooltip — interaction mode switching", () => {
+  beforeEach(() => cleanup());
+
+  const isOpen = (triggerName: string) => {
+    const tips = screen.queryAllByRole("tooltip");
+    return tips.some((t) =>
+      (t.textContent ?? "").toLowerCase().includes(triggerName.toLowerCase()),
+    );
+  };
+
+  it("re-opens correctly when alternating hover and focus on the same trigger", async () => {
+    const user = userEvent.setup();
+    renderDocsChrome();
+    const trigger = screen.getByLabelText("Toggle sidebar");
+
+    // 1. Hover opens.
+    await user.hover(trigger);
+    await screen.findAllByRole("tooltip");
+    expect(isOpen("Toggle sidebar")).toBe(true);
+
+    // 2. Move pointer away — tooltip should close.
+    await user.unhover(trigger);
+    // Radix close is async; wait for the role to disappear.
+    await waitFor(() => expect(isOpen("Toggle sidebar")).toBe(false));
+
+    // 3. Keyboard focus re-opens.
+    trigger.focus();
+    await screen.findAllByRole("tooltip");
+    expect(isOpen("Toggle sidebar")).toBe(true);
+
+    // 4. Blur closes again.
+    trigger.blur();
+    await waitFor(() => expect(isOpen("Toggle sidebar")).toBe(false));
+
+    // 5. Hover re-opens after the focus round-trip — proves no
+    //    stuck listeners or detached refs from mode switching.
+    await user.hover(trigger);
+    await screen.findAllByRole("tooltip");
+    expect(isOpen("Toggle sidebar")).toBe(true);
+  });
+
+  it("does not leave a stale tooltip open when focus moves between two triggers", async () => {
+    const user = userEvent.setup();
+    renderDocsChrome();
+    const sidebar = screen.getByLabelText("Toggle sidebar");
+    const dark = screen.getByLabelText("Dark theme");
+
+    // Hover the first, then keyboard-focus the second. Only the
+    // second tooltip should be open at the end of the sequence.
+    await user.hover(sidebar);
+    await screen.findAllByRole("tooltip");
+    expect(isOpen("Toggle sidebar")).toBe(true);
+
+    await user.unhover(sidebar);
+    dark.focus();
+    await screen.findAllByRole("tooltip");
+
+    await waitFor(() => {
+      expect(isOpen("Dark theme")).toBe(true);
+      expect(isOpen("Toggle sidebar")).toBe(false);
+    });
+  });
+});
