@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/alimtvnetwork/gitmap-v7/gitmap/cloneconcurrency"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonenext"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/cloner"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
@@ -391,10 +392,12 @@ func validateShorthandPath(resolved string) string {
 // in cloner.applyDefaultBranchFallback so they go through the
 // trusted `git clone -b <fallback>` path.
 func executeClone(source, targetDir string, safePull, ghDesktop bool, maxConcurrency int, defaultBranch string) {
-	if maxConcurrency < 1 {
+	workers, ok := cloneconcurrency.Resolve(maxConcurrency)
+	if !ok {
 		fmt.Fprintf(os.Stderr, constants.ErrCloneMaxConcurrencyInvalid, maxConcurrency)
 		os.Exit(1)
 	}
+	maxConcurrency = workers
 
 	// Enqueue clone as a pending task before execution.
 	absTarget, absErr := filepath.Abs(targetDir)
