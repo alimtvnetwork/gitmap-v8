@@ -5,6 +5,7 @@ import CommandPalette from "@/components/docs/CommandPalette";
 import CopyPaletteButton from "@/components/docs/CopyPaletteButton";
 import { VERSION } from "@/constants/index";
 import { useTheme } from "@/hooks/useTheme";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DocsLayoutProps {
   children: React.ReactNode;
