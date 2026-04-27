@@ -68,7 +68,7 @@ export function CopyPaletteButton() {
 
   const tooltipText = copied
     ? "Copied!"
-    : `Copy ${themeLabel} CSS variables to clipboard`;
+    : `Copy ${themeLabel} theme palette (CSS variables) to clipboard`;
 
   return (
     <Tooltip>
