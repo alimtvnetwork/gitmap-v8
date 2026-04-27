@@ -25,7 +25,7 @@ const DocsLayout = ({ children }: DocsLayoutProps) => {
               <TooltipTrigger asChild>
                 <SidebarTrigger
                   aria-label="Toggle sidebar"
-                  className="shrink-0 rounded-sm border border-sidebar-border bg-sidebar-accent/60 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  className="docs-focus-ring shrink-0 rounded-sm border border-sidebar-border bg-sidebar-accent/60 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 />
               </TooltipTrigger>
               <TooltipContent side="bottom">Toggle sidebar (navigation)</TooltipContent>
@@ -36,7 +36,7 @@ const DocsLayout = ({ children }: DocsLayoutProps) => {
                 <span
                   tabIndex={0}
                   aria-label={`gitmap version ${VERSION}`}
-                  className="shrink-0 cursor-default rounded-sm border border-border bg-card px-2 py-0.5 text-[11px] font-mono text-muted-foreground shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="docs-focus-ring shrink-0 cursor-default rounded-sm border border-border bg-card px-2 py-0.5 text-[11px] font-mono text-muted-foreground shadow-sm"
                 >
                   {VERSION}
                 </span>
@@ -57,7 +57,7 @@ const DocsLayout = ({ children }: DocsLayoutProps) => {
                     aria-label="Dark theme"
                     onClick={() => setTheme("dark")}
                     className={[
-                      "inline-flex h-6 w-6 items-center justify-center rounded-[3px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card",
+                      "docs-focus-ring inline-flex h-6 w-6 items-center justify-center rounded-[3px] transition-colors duration-200",
                       dark
                         ? "bg-secondary text-foreground"
                         : "text-muted-foreground hover:text-foreground",
@@ -77,7 +77,7 @@ const DocsLayout = ({ children }: DocsLayoutProps) => {
                     aria-label="Light theme"
                     onClick={() => setTheme("light")}
                     className={[
-                      "inline-flex h-6 w-6 items-center justify-center rounded-[3px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card",
+                      "docs-focus-ring inline-flex h-6 w-6 items-center justify-center rounded-[3px] transition-colors duration-200",
                       !dark
                         ? "bg-secondary text-foreground"
                         : "text-muted-foreground hover:text-foreground",
