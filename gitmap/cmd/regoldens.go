@@ -3,13 +3,9 @@ package cmd
 // CLI entry point for `gitmap regoldens`. Wraps the two-pass
 // golden-fixture regeneration workflow defined in
 // spec/05-coding-guidelines/21-golden-fixture-regeneration.md so
-// contributors cannot forget the verification pass or leak the
-// gate env vars into their shell.
-//
-// The two-key safety gate (GITMAP_UPDATE_GOLDEN +
-// GITMAP_ALLOW_GOLDEN_UPDATE, both must equal "1") is sourced from
-// the goldenguard package — see goldenguard.AllowUpdateEnv. We do
-// NOT redefine the values here to keep one source of truth.
+// contributors cannot forget the verify pass or leak the gate env
+// vars into their shell. The two-key safety gate values come from
+// the goldenguard package (single source of truth).
 
 import (
 	"flag"
@@ -22,8 +18,7 @@ import (
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/goldenguard"
 )
 
-// regoldensFlags captures parsed CLI inputs. Grouped in a struct
-// so future additions don't churn helper signatures.
+// regoldensFlags captures parsed CLI inputs.
 type regoldensFlags struct {
 	pattern    string
 	pkg        string
@@ -31,16 +26,12 @@ type regoldensFlags struct {
 	isDryRun   bool
 }
 
-// goTestUpdateEnvValue is the literal value both gate env vars
-// must hold to unlock pass 1. Kept in sync with goldenguard's
-// allowUpdateValue (also "1") — that constant is unexported so we
-// pin the literal locally with a clear comment instead of
-// re-exporting it.
+// goTestUpdateEnvValue mirrors goldenguard.allowUpdateValue (which
+// is unexported). Both gate env vars must equal "1" to unlock pass 1.
 const goTestUpdateEnvValue = "1"
 
 // goTestUpdateTriggerEnv is the per-test trigger env var checked
-// by every golden test in the repo. Centralized here so the
-// command body stays declarative.
+// by every golden test in the repo.
 const goTestUpdateTriggerEnv = "GITMAP_UPDATE_GOLDEN"
 
 // runRegoldens is the dispatcher entry. checkHelp first so `--help`
