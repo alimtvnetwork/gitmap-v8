@@ -177,34 +177,8 @@ func runCloneFromExecute(plan clonefrom.Plan, cfg cloneFromFlags) {
 	os.Exit(cloneFromExitCode(results))
 }
 
-// writeCloneFromReports persists the CSV report (always, unless
-// --no-report) and additionally the JSON report when --output
-// terminal is set (the terminal summary surfaces both paths).
-// Returns ("", "") when --no-report skips both. Failures are logged
-// to stderr but never abort — clones already happened, the reports
-// are bonus.
-func writeCloneFromReports(results []clonefrom.Result, cfg cloneFromFlags) (string, string) {
-	if cfg.noReport {
-		return "", ""
-	}
-	csvPath := ""
-	if p, err := clonefrom.WriteReport(results); err == nil {
-		csvPath = p
-	} else {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	if cfg.output != constants.OutputTerminal {
-		return csvPath, ""
-	}
-	jsonPath := ""
-	if p, err := clonefrom.WriteReportJSON(results); err == nil {
-		jsonPath = p
-	} else {
-		fmt.Fprintln(os.Stderr, err)
-	}
-
-	return csvPath, jsonPath
-}
+// writeCloneFromReports lives in clonefrom_reports.go to keep this
+// file under the project's 200-line cap.
 
 // cloneFromExitCode returns 1 if any row failed, else 0. Skipped
 // rows are NOT failures — re-running an idempotent plan with all
