@@ -87,6 +87,13 @@ Preview without executing:
 gitmap rg --pattern TestCloneNow_CrossFormat --dry-run
 ```
 
+Regenerate and inspect which goldens changed before verification:
+
+```
+gitmap rg --pattern TestCloneFromReportJSON_Golden \
+  --package ./gitmap/clonefrom/ --diff
+```
+
 ## Exit codes
 
 | Code | Meaning |
