@@ -133,9 +133,17 @@ const (
 	FlagDescRegoldensDryRun      = "Print the `go test` invocations that would run, then exit 0"
 	FlagRegoldensDiff            = "diff"
 	FlagDescRegoldensDiff        = "After pass 1, print a summary of touched testdata/ golden files. Modes: 'short' = one terse line per file (status + path + +/- counts); 'full' = adds rename details and aggregate totals. Usage: --diff=short or --diff=full"
+	FlagRegoldensDeterminism     = "determinism"
+	FlagDescRegoldensDeterminism = "Run a determinism pre-check pass BEFORE pass 1: invokes `go test` with the per-test trigger but WITHOUT the allow-update gate, so any writer using goldenguard.AllowUpdateAfterDeterminism is exercised but no fixtures are written. Fails fast (exit 1) on the first non-deterministic writer; otherwise pass 1 proceeds normally."
 	RegoldensDiffModeShort       = "short"
 	RegoldensDiffModeFull        = "full"
 	RegoldensDefaultPackageGlob  = "./..."
+	// RegoldensNonDetMarker is the substring goldenguard prints when
+	// a writer fails AssertWriterDeterministic. The pre-check pass
+	// scans `go test` output for this marker to distinguish a real
+	// non-determinism failure from the EXPECTED gate-block failure.
+	// Keep in sync with goldenguard/determinism.go nonDeterministicWriterMsgFmt.
+	RegoldensNonDetMarker        = "is non-deterministic"
 )
 
 // Regoldens user-facing messages.
