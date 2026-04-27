@@ -164,13 +164,15 @@ func readNumstatCounts() (map[string][2]int, error) {
 
 // mergeStatusAndNumstat joins the two maps by path, defaulting line
 // counts to 0 for added/deleted/untracked files (numstat omits them).
-func mergeStatusAndNumstat(statuses map[string]string, counts map[string][2]int) []goldenDiffEntry {
+// renamedFrom is preserved from the porcelain entry.
+func mergeStatusAndNumstat(statuses map[string]goldenDiffEntry, counts map[string][2]int) []goldenDiffEntry {
 	entries := make([]goldenDiffEntry, 0, len(statuses))
-	for path, status := range statuses {
+	for path, e := range statuses {
 		c := counts[path]
-		entries = append(entries, goldenDiffEntry{
-			status: status, path: path, added: c[0], deleted: c[1],
-		})
+		e.added = c[0]
+		e.deleted = c[1]
+		_ = path
+		entries = append(entries, e)
 	}
 	sortGoldenDiffEntries(entries)
 	return entries
