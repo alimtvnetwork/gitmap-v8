@@ -13,6 +13,7 @@ package clonenow
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
