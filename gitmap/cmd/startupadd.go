@@ -103,6 +103,10 @@ func parseStartupAddFlags(args []string) startupAddFlags {
 		constants.FlagDescStartupAddWorkingDir)
 	fs.StringVar(&cfg.backend, constants.FlagStartupAddBackend, "",
 		constants.FlagDescStartupAddBackend)
+	fs.StringVar(&cfg.output, constants.FlagStartupOutput, constants.OutputTerminal,
+		constants.FlagDescStartupOutput)
+	fs.IntVar(&cfg.jsonIndent, constants.FlagStartupJSONIndent,
+		constants.StartupListJSONIndentDefault, constants.FlagDescStartupJSONIndent)
 	fs.Parse(args)
 	if cfg.name == "" {
 		fmt.Fprintln(os.Stderr,
