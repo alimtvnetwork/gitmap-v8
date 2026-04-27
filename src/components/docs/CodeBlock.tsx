@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { Copy, Check, Download, Maximize2, Minimize2, AArrowUp, AArrowDown } from "lucide-react";
 import { copyToClipboard } from "@/lib/clipboard";
+import { DocsTooltip } from "@/components/docs/DocsTooltip";
 import hljs from "highlight.js/lib/core";
 import go from "highlight.js/lib/languages/go";
 import typescript from "highlight.js/lib/languages/typescript";
