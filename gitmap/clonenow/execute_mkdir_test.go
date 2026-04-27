@@ -53,7 +53,7 @@ func TestRunGitClone_PreExistingParentIsNoOp(t *testing.T) {
 	if ok {
 		t.Fatalf("expected git to fail on invalid host, got ok=true")
 	}
-	if detail == "mkdir parent: " || filepath.HasPrefix(detail, "mkdir parent:") {
+	if strings.HasPrefix(detail, "mkdir parent:") {
 		t.Fatalf("unexpected mkdir failure on existing parent: %q", detail)
 	}
 }
