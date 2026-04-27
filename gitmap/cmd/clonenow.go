@@ -53,7 +53,7 @@ func runCloneNow(args []string) {
 		os.Exit(1)
 	}
 	if !cfg.execute {
-		runCloneNowDry(plan)
+		runCloneNowDry(plan, cfg)
 
 		return
 	}
