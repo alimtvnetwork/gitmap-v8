@@ -94,13 +94,16 @@ const (
 	StartupLnkExt         = ".lnk"
 )
 
-// Flag values + descriptions for the new --backend flag on
-// `gitmap startup-add`. Listed at the package's existing flag block
-// for discoverability via `gitmap startup-add --help`.
+// Flag values + descriptions for the --backend flag on
+// `gitmap startup-add` / `startup-remove` / `startup-list`. Listed
+// at the package's existing flag block for discoverability via
+// `gitmap startup-add --help`.
 const (
 	FlagStartupAddBackend     = "backend"
-	FlagDescStartupAddBackend = "Windows backend: registry (default) or startup-folder"
-	ErrStartupAddBadBackend   = "startup-add: unknown --backend %q (expected: registry, startup-folder)"
+	FlagDescStartupAddBackend = "Windows backend: registry (default, HKCU per-user), " +
+		"registry-hklm (HKLM machine-wide; requires admin), or startup-folder"
+	ErrStartupAddBadBackend = "startup-add: unknown --backend %q " +
+		"(expected: registry, registry-hklm, startup-folder)"
 )
 
 // Windows user-visible messages. Plain ASCII glyphs to match the
@@ -117,5 +120,16 @@ const (
 	ErrStartupPowerShellMissing  = "powershell.exe not found on PATH " +
 		"(required for --backend=startup-folder; install Windows " +
 		"PowerShell or use --backend=registry)"
+	// ErrStartupHKLMNotAdmin is surfaced BEFORE any registry write
+	// attempt when --backend=registry-hklm is requested but the
+	// current process token is not elevated. Keeping the check
+	// up-front (instead of relying on the registry ACL to refuse
+	// SET_VALUE) means the user sees a friendly, actionable
+	// message instead of a raw "Access is denied" Win32 error and
+	// no half-written tracking metadata is ever left behind.
+	ErrStartupHKLMNotAdmin = "startup-add: --backend=registry-hklm requires " +
+		"administrator privileges (re-run from an elevated shell, e.g. " +
+		"`Run as administrator` from the Start menu, or use the per-user " +
+		"`--backend=registry` default)"
 	StartupFolderRelative = `Microsoft\Windows\Start Menu\Programs\Startup`
 )
