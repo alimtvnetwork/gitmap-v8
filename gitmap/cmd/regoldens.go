@@ -93,15 +93,12 @@ func emitRegoldensDryRun(cfg regoldensFlags) {
 }
 
 // goTestArgv returns the `go test ...` argv shared by both passes.
-// `-count=1` defeats the test cache so pass 2 actually re-runs the
-// just-regenerated fixtures instead of returning a cached result.
+// `-count=1` defeats the test cache so pass 2 actually re-runs.
 func goTestArgv(cfg regoldensFlags) []string {
 	return []string{"go", "test", cfg.pkg, "-run", cfg.pattern, "-count=1"}
 }
 
 // executeRegoldens runs pass 1, then (unless --skip-verify) pass 2.
-// Failure of either pass exits status 1 so CI / make can chain this
-// command and rely on the exit code.
 func executeRegoldens(cfg regoldensFlags) {
 	runRegoldensPass(cfg, true,
 		constants.MsgRegoldensPass1Header,
@@ -119,11 +116,9 @@ func executeRegoldens(cfg regoldensFlags) {
 		cfg.pattern, cfg.pkg)
 }
 
-// runRegoldensPass prints the header, runs one `go test` pass, and
-// exits 1 with the supplied error format when the pass fails.
-// withGate selects whether the gate env vars are injected (pass 1)
-// or stripped (pass 2). Extracted so executeRegoldens stays small
-// and the pass1/pass2 control flow is symmetric.
+// runRegoldensPass prints the header, runs one pass, and exits 1
+// with the supplied error format on failure. withGate toggles the
+// gate-vars-injected (pass 1) vs gate-vars-stripped (pass 2) env.
 func runRegoldensPass(cfg regoldensFlags, withGate bool, header, errFmt string) {
 	fmt.Fprint(os.Stderr, header)
 	code := runGoTestPass(cfg, withGate)
@@ -136,13 +131,12 @@ func runRegoldensPass(cfg regoldensFlags, withGate bool, header, errFmt string) 
 }
 
 // runGoTestPass executes one `go test` invocation and returns its
-// exit code. When withGate is true, the two gate env vars are
-// injected; when false, they are explicitly REMOVED from the child
-// environment (not just left unset by the parent — a developer's
-// shell may have them exported, which would silently break pass 2).
+// exit code. When withGate is false, the two gate env vars are
+// explicitly REMOVED from the child env (not just left unset) so a
+// developer's leaked shell export cannot silently break pass 2.
 func runGoTestPass(cfg regoldensFlags, withGate bool) int {
 	argv := goTestArgv(cfg)
-	cmd := exec.Command(argv[0], argv[1:]...) //nolint:gosec // argv is built from validated CLI flags + literal "go"
+	cmd := exec.Command(argv[0], argv[1:]...) //nolint:gosec // argv built from validated CLI flags + literal "go"
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = buildPassEnv(withGate)
@@ -153,11 +147,9 @@ func runGoTestPass(cfg regoldensFlags, withGate bool) int {
 	return 0
 }
 
-// buildPassEnv returns the child environment for one pass. The
-// parent environment is filtered: gate vars are stripped first,
-// then re-added only when withGate is true. This guarantees pass 2
-// never inherits a leaked GITMAP_UPDATE_GOLDEN from the developer's
-// shell — the whole reason this command exists.
+// buildPassEnv returns the child environment for one pass. Gate
+// vars are stripped from the parent env first, then re-added only
+// when withGate is true.
 func buildPassEnv(withGate bool) []string {
 	out := stripGoldenGateVars(os.Environ())
 	if !withGate {
