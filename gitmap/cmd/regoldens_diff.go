@@ -120,7 +120,7 @@ func readPorcelainStatuses() (map[string]goldenDiffEntry, error) {
 			continue
 		}
 		path, from := splitPorcelainPath(line[3:])
-		if !strings.Contains(path, goldenDiffPathFragment) {
+		if !isGoldenFixturePath(path) {
 			continue
 		}
 		result[path] = goldenDiffEntry{
