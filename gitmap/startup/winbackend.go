@@ -33,10 +33,17 @@ const (
 	// keeps the public Add(opts) API ergonomic for non-Windows
 	// callers that have no opinion on backend.
 	BackendUnspecified Backend = iota
-	// BackendRegistry writes the Run-key value + tracking subkey.
+	// BackendRegistry writes the HKCU Run-key value + tracking
+	// subkey (per-user; the long-standing default).
 	BackendRegistry
 	// BackendStartupFolder writes the .lnk + tracking subkey.
 	BackendStartupFolder
+	// BackendRegistryHKLM writes the HKLM Run-key value +
+	// tracking subkey (machine-wide; requires admin). Same on-
+	// disk shape as BackendRegistry, just rooted under
+	// HKEY_LOCAL_MACHINE so every interactive user on the
+	// machine triggers the autostart at login.
+	BackendRegistryHKLM
 )
 
 // ParseBackend translates the user-facing flag string into the
@@ -54,6 +61,8 @@ func ParseBackend(s string) (Backend, error) {
 		return BackendRegistry, nil
 	case constants.StartupBackendStartupFolder:
 		return BackendStartupFolder, nil
+	case constants.StartupBackendRegistryHKLM:
+		return BackendRegistryHKLM, nil
 	default:
 		return BackendUnspecified, fmt.Errorf(constants.ErrStartupAddBadBackend, s)
 	}
@@ -67,6 +76,8 @@ func (b Backend) String() string {
 		return constants.StartupBackendRegistry
 	case BackendStartupFolder:
 		return constants.StartupBackendStartupFolder
+	case BackendRegistryHKLM:
+		return constants.StartupBackendRegistryHKLM
 	default:
 		return ""
 	}
