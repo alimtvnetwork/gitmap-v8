@@ -56,16 +56,7 @@ func runRegoldens(args []string) {
 	executeRegoldens(cfg)
 }
 
-// validateDiffMode rejects unknown --diff values up front so the
-// orchestrator can trust cfg.diffMode is "", "short", or "full".
-func validateDiffMode(mode string) {
-	if mode == "" || mode == constants.RegoldensDiffModeShort ||
-		mode == constants.RegoldensDiffModeFull {
-		return
-	}
-	fmt.Fprintf(os.Stderr, constants.ErrRegoldensDiffMode+"\n", mode)
-	os.Exit(2)
-}
+// validateDiffMode lives in regoldens_validate.go (file-length cap).
 
 // parseRegoldensFlags wires the flag set. Defaults match the
 // constants block so changing a default is a one-line edit there.
