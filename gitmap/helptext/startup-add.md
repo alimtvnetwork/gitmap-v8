@@ -13,6 +13,7 @@ sa
 
     gitmap startup-add --name <id> [--exec <path>] [--display-name <s>]
                        [--comment <s>] [--working-dir <path>]
+                       [--backend registry|registry-hklm|startup-folder]
                        [--no-display] [--force]
 
 ## Flags
@@ -26,6 +27,7 @@ sa
 | --working-dir    | no  | Working directory the entry runs in (see *Working directory* below) |
 | --no-display     | no  | Set `NoDisplay=true` (hide from app menus, still autostarts) |
 | --force          | no  | Overwrite an existing **gitmap-managed** entry (never overwrites third-party files) |
+| --backend        | no  | Windows only: `registry` (default, HKCU per-user), `registry-hklm` (HKLM machine-wide; **requires admin**), or `startup-folder` |
 | --output         | no  | Output mode: `terminal` (default human lines) or `json` (status object — see below) |
 | --json-indent    | no  | Spaces per indent level for `--output=json` (`0` = minified). Range 0..8. Ignored for terminal |
 
