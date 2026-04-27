@@ -47,9 +47,14 @@ import (
 )
 
 // schemaDir is the relative path from the cmd package to the
-// per-(name,version) JSON files. Centralized so a future move to
-// e.g. testdata/json-schemas/ is one constant edit.
-const schemaDir = "testdata/schemas"
+// per-(name,version) JSON files. Declared as a var (not const) so
+// the registry's own contract tests can swap in a t.TempDir() and
+// exercise --update-schema's file-rewrite path without touching the
+// real testdata/schemas/ directory. Production callers MUST NOT
+// reassign this — the test that swaps always restores it on cleanup.
+//
+//nolint:gochecknoglobals // Test-time configurable directory.
+var schemaDir = "testdata/schemas"
 
 // schemaFilePattern is the glob used to discover all versions of a
 // given schema. `*` is the version segment (e.g. "v1"). Filenames
