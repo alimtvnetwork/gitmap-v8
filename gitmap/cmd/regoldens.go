@@ -21,11 +21,12 @@ import (
 
 // regoldensFlags captures parsed CLI inputs.
 type regoldensFlags struct {
-	pattern    string
-	pkg        string
-	skipVerify bool
-	isDryRun   bool
-	diffMode   string // "" (off), "short", or "full"
+	pattern     string
+	pkg         string
+	skipVerify  bool
+	isDryRun    bool
+	diffMode    string // "" (off), "short", or "full"
+	determinism bool
 }
 
 // hasDiff reports whether any diff summary was requested.
