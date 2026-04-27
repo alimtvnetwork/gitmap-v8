@@ -38,6 +38,11 @@ type cloneFromFlags struct {
 	// the legacy 4-line block; "terminal" renders the standardized
 	// branch/from/to/command block shared with scan, clone-next, probe.
 	output string
+	// checkout sets the GLOBAL default checkout mode. Empty string
+	// → falls back to constants.CloneFromCheckoutDefault. Per-row
+	// `checkout` field always wins. Validated up-front so a typo
+	// fails before any clone runs.
+	checkout string
 	// verifyCmdFaithful enables the dry-run argv-vs-displayed checker.
 	verifyCmdFaithful bool
 	// verifyCmdFaithfulExitOnMismatch upgrades the verifier into a
@@ -63,6 +68,7 @@ func runCloneFrom(args []string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	applyCheckoutDefault(&plan, cfg.checkout)
 	if !cfg.execute {
 		runCloneFromDry(plan, cfg)
 		maybeExitOnCmdFaithfulMismatch()
@@ -71,6 +77,9 @@ func runCloneFrom(args []string) {
 	}
 	runCloneFromExecute(plan, cfg)
 }
+
+// applyCheckoutDefault and validateCheckoutFlag live in
+// clonefrom_checkout.go to keep this file under the 200-line cap.
 
 // parseCloneFromFlags wires flags + extracts the positional file
 // argument. Exits 2 with a clear message when <file> is missing —
@@ -94,16 +103,21 @@ func parseCloneFromFlags(args []string) cloneFromFlags {
 		constants.FlagDescCloneVerifyCmdFaithfulExitOnMismatch)
 	fs.BoolVar(&cfg.printCloneArgv, constants.FlagClonePrintArgv,
 		false, constants.FlagDescClonePrintArgv)
+	fs.StringVar(&cfg.checkout, constants.FlagCloneFromCheckout, "",
+		constants.FlagDescCloneFromCheckout)
 	reordered := reorderFlagsBeforeArgs(args)
 	fs.Parse(reordered)
 	if fs.NArg() < 1 {
 		fmt.Fprintln(os.Stderr, constants.MsgCloneFromMissingArg)
 		os.Exit(2)
 	}
+	validateCheckoutFlag(cfg.checkout)
 	cfg.file = fs.Arg(0)
 
 	return cfg
 }
+
+// validateCheckoutFlag lives in clonefrom_checkout.go.
 
 // runCloneFromDry renders the dry-run preview and exits with the
 // dry-run conventional code (0 = "I would do these things"). No

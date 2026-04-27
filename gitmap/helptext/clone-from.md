@@ -25,6 +25,7 @@ gitmap cf <file> --execute            # short alias
 | `--quiet` | off | Suppress per-row progress lines. The end-of-batch summary still prints. |
 | `--no-report` | off | Skip writing the `.gitmap/clone-from-report-<unixts>.csv` file. |
 | `--output <mode>` | `default` | Per-row format. `default` = legacy 4-line block. `terminal` = standardized branch/from/to/command block on **stdout**, streamed immediately before each row's `git clone`. Git's clone progress and the human summary stay on **stderr**. |
+| `--checkout <mode>` | `auto` | Default post-clone checkout behaviour. `auto` = legacy (git checks out the cloned branch / remote HEAD). `skip` = pass `--no-checkout` to `git clone` so no working tree is materialized. `force` = explicitly run `git checkout <branch>` after clone and **fail the row** if the branch is missing on the remote. Per-row `checkout` field in the input file overrides this global default. |
 | `--help` | off | Print this help and exit. |
 
 ## Output streams (`--output terminal`)
@@ -56,16 +57,16 @@ Unknown object keys are tolerated — future schema additions don't break old gi
 
 ### CSV
 
-A header row of `url,dest,branch,depth` (case-insensitive). Only the `url` column is required to be present in the header; missing optional columns default to empty.
+A header row of `url,dest,branch,depth,checkout` (case-insensitive). Only the `url` column is required to be present in the header; missing optional columns default to empty.
 
 ```csv
-url,dest,branch,depth
-https://github.com/charmbracelet/bubbletea.git,,,
-git@github.com:cli/cli.git,github-cli,,
-https://example.org/big.git,,main,1
+url,dest,branch,depth,checkout
+https://github.com/charmbracelet/bubbletea.git,,,,
+git@github.com:cli/cli.git,github-cli,,,skip
+https://example.org/big.git,,main,1,force
 ```
 
-Extra columns after `depth` are ignored. Ragged rows (fewer fields than the header) are tolerated.
+Extra columns past the recognised set are ignored. Ragged rows (fewer fields than the header) are tolerated.
 
 ## URL forms
 
@@ -83,6 +84,18 @@ When `--execute` is on, a row is marked **skipped** (not failed) if its resolved
 ## Folder hierarchy
 
 Nested `dest` paths preserve the original folder hierarchy: a row with `dest: org-a/team-x/repo-1` clones into `<cwd>/org-a/team-x/repo-1/`, with any missing parent directories created automatically (`MkdirAll`, idempotent on existing dirs). If a parent path collides with an existing FILE the row is marked **failed** with `mkdir parent: …` in the detail column — never silently swallowed.
+
+## Checkout modes
+
+Each row may set a `checkout` value (and `--checkout` sets a global default). Three modes:
+
+| Mode | Effect on `git clone` | Post-clone step | Failure behaviour |
+|---|---|---|---|
+| `auto` (default) | unchanged — git clones with `--branch` when the row pins one, else uses the remote's HEAD | none | clone-time errors only |
+| `skip` | adds `--no-checkout` so no working tree is materialized (just `.git/`) | none | clone-time errors only |
+| `force` | unchanged | runs `git -C <dest> checkout <branch>` (no-op when the row has no `branch`) | row marked **failed** with `branch missing on remote: <name>` if the checkout step fails (typo'd branch, branch deleted upstream, detached-HEAD with no target). Stderr also gets a Code Red log. |
+
+A row's per-row value always wins over the `--checkout` global default. Invalid values (anything other than `auto`/`skip`/`force`) are rejected at parse time with a row-pointing error before any clone runs.
 
 ## Exit codes
 

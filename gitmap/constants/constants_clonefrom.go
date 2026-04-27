@@ -40,6 +40,28 @@ const (
 	FlagDescCloneFromOutput = "Per-row format: 'default' (legacy 4-line block) " +
 		"or 'terminal' (standardized branch/from/to/command block on " +
 		"stdout, streamed before each clone; git progress stays on stderr)"
+	// FlagCloneFromCheckout sets the GLOBAL default for post-clone
+	// working-tree behaviour. Per-row `checkout` (JSON/CSV column)
+	// overrides this. Modes: "auto" (default — git clone materializes
+	// the working tree), "skip" (passes --no-checkout, no working
+	// tree), "force" (explicit `git checkout <branch>` after clone,
+	// fails the row on missing branch / detached-HEAD-with-no-target).
+	FlagCloneFromCheckout     = "checkout"
+	FlagDescCloneFromCheckout = "Default per-row checkout mode " +
+		"('auto' | 'skip' | 'force'). Per-row 'checkout' field " +
+		"overrides this. 'skip' uses --no-checkout. 'force' runs " +
+		"git checkout after clone and fails missing-branch rows."
+)
+
+// Checkout-mode enum. Stable strings — emitted in error/detail
+// messages and accepted verbatim from the JSON/CSV `checkout` field.
+const (
+	CloneFromCheckoutAuto  = "auto"
+	CloneFromCheckoutSkip  = "skip"
+	CloneFromCheckoutForce = "force"
+	// CloneFromCheckoutDefault is the project-wide default applied
+	// when neither the global flag nor the row specifies one.
+	CloneFromCheckoutDefault = CloneFromCheckoutAuto
 )
 
 // JSON report envelope. CloneFromReportSchemaVersion is embedded as
@@ -135,4 +157,37 @@ const (
 	// %s = parent path, %v = err.
 	ErrCloneFromMkdirParent = "Error: clone-from: failed to create dest parent at %s: %v " +
 		"(operation: MkdirAll, reason: cannot preserve folder hierarchy)\n"
+
+	// ErrCloneFromBadCheckout fires at parse time when the row's
+	// `checkout` field is set to anything other than auto/skip/force.
+	// %q = bad value.
+	ErrCloneFromBadCheckout = "checkout %q is not one of 'auto', 'skip', 'force'"
+
+	// MsgCloneFromBranchMissingFmt is the per-row Detail when
+	// checkout=force is configured AND `git checkout <branch>` fails
+	// because the branch doesn't exist on the cloned remote (typical
+	// cause: typo in row.Branch). The string is short — full git
+	// stderr already streamed live during the clone.
+	// %s = branch name.
+	MsgCloneFromBranchMissingFmt = "branch missing on remote: %s"
+
+	// ErrCloneFromCheckoutFailed is the standardized stderr Code Red
+	// log emitted alongside the per-row failure when post-clone
+	// checkout fails. Mirrors ErrCloneFromMkdirParent format so the
+	// stderr surface is uniform across executor failure modes.
+	// %s = dest, %s = branch, %v = err.
+	ErrCloneFromCheckoutFailed = "Error: clone-from: post-clone checkout failed at %s for branch %q: %v " +
+		"(operation: git checkout, reason: branch missing on remote or detached HEAD without target)\n"
+
+	// MsgCloneFromBadCheckoutFlag is the user-facing message when the
+	// CLI --checkout flag is given an invalid value. Caller-friendly
+	// message (vs. the parse-time ErrCloneFromBadCheckout used for
+	// row-level errors). %s = bad value.
+	MsgCloneFromBadCheckoutFlag = "clone-from: --checkout %q is not one of 'auto', 'skip', 'force'"
+
+	// CloneFromNoCheckoutFlag is the literal git flag passed in
+	// `--no-checkout` mode. Centralized so the executor and the
+	// preview renderer agree byte-for-byte (preserves the
+	// --verify-cmd-faithful invariant the depth flag set up).
+	CloneFromNoCheckoutFlag = "--no-checkout"
 )
