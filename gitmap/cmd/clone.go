@@ -139,6 +139,13 @@ func runCloneMulti(cf CloneFlags) {
 	for idx, url := range urls {
 		fmt.Printf(constants.MsgCloneMultiItem, idx+1, len(urls), url)
 
+		// `--output terminal`: stream the standardized RepoTermBlock
+		// BEFORE shelling out so the user sees branch/from/to/command
+		// for THIS repo before its clone progress, then the next
+		// repo's block after this one finishes. Mirrors the streamed
+		// emission contract locked in chat.
+		printCloneTermBlockForURL(cf.Output, idx+1, url, "")
+
 		if err := executeDirectCloneOne(url, "", cf.GHDesktop, cf.NoReplace); err != nil {
 			fmt.Fprintf(os.Stderr, constants.ErrCloneMultiFailedFmt, idx+1, len(urls), url, err)
 			failed++
