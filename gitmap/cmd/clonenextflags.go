@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
+	"github.com/alimtvnetwork/gitmap-v7/gitmap/cloneconcurrency"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
 )
 
@@ -101,6 +104,12 @@ func parseCloneNextFlags(args []string) CloneNextFlags {
 	// `-f` in the screenshot above was silently dropped.
 	fs.Parse(reorderFlagsBeforeArgs(args))
 
+	resolvedConc, ok := cloneconcurrency.Resolve(*maxConcFlag)
+	if !ok {
+		fmt.Fprintf(os.Stderr, constants.ErrCloneMaxConcurrencyInvalid, *maxConcFlag)
+		os.Exit(1)
+	}
+
 	out := CloneNextFlags{
 		Delete:         *delFlag,
 		Keep:           *kpFlag,
@@ -111,7 +120,7 @@ func parseCloneNextFlags(args []string) CloneNextFlags {
 		CSVPath:        *csvPath,
 		All:            *allFlag,
 		Force:          *forceFlag,
-		MaxConcurrency: *maxConcFlag,
+		MaxConcurrency: resolvedConc,
 		NoProgress:     *noProgressFlag,
 		ReportErrors:   *reportErrFlag,
 		DryRun:                          *dryRunFlag,

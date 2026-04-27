@@ -31,6 +31,7 @@ gitmap rc       <file> --execute                   # short alias of relclone
 | `--format` | (auto) | Force input format: `json`, `csv`, or `text`. Default: detected from the file extension. |
 | `--cwd` | (current dir) | Working directory each `git clone` runs in. Useful for re-creating a tree under a fresh root. |
 | `--output <mode>` | (off) | Per-repo summary format. `terminal` = standardized branch/from/to/command block on **stdout**, streamed immediately before each row's `git clone`. Git progress and the batch summary stay on **stderr**. Empty (default) keeps the legacy output. |
+| `--max-concurrency <N>` | 0 (auto = NumCPU) | Run up to N clones in parallel. `1` = sequential (monotonic `[i/N]` progress). `0` = auto. The on-disk hierarchy is preserved at any N because every worker still uses each row's `relativePath` verbatim. |
 | `--help` | off | Print this help and exit. |
 
 ## Output streams (`--output terminal`)

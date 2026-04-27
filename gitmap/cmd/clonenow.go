@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/alimtvnetwork/gitmap-v7/gitmap/cloneconcurrency"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/clonenow"
 	"github.com/alimtvnetwork/gitmap-v7/gitmap/constants"
 )
@@ -50,6 +51,13 @@ type cloneNowFlags struct {
 	// printCloneArgv dumps the executor argv to stderr. Companion
 	// audit flag — see gitmap/cmd/cloneprintargv.go.
 	printCloneArgv bool
+	// maxConcurrency is the resolved worker-pool size (0 → auto via
+	// cloneconcurrency.Resolve at parse time, so by the time
+	// runCloneNow sees it the value is always >= 1). Increasing N
+	// preserves the on-disk hierarchy because every worker still
+	// uses each row's RelativePath verbatim — only progress-line
+	// timing changes.
+	maxConcurrency int
 }
 
 // runCloneNow is the dispatcher entry. checkHelp handles `--help`
@@ -104,6 +112,8 @@ func parseCloneNowFlags(args []string) cloneNowFlags {
 		constants.FlagDescCloneVerifyCmdFaithfulExitOnMismatch)
 	fs.BoolVar(&cfg.printCloneArgv, constants.FlagClonePrintArgv,
 		false, constants.FlagDescClonePrintArgv)
+	maxConcFlag := fs.Int(constants.CloneFlagMaxConcurrency,
+		constants.CloneDefaultMaxConcurrency, constants.FlagDescCloneMaxConcurrency)
 	reordered := reorderFlagsBeforeArgs(args)
 	fs.Parse(reordered)
 	if fs.NArg() < 1 {
@@ -111,6 +121,12 @@ func parseCloneNowFlags(args []string) cloneNowFlags {
 		os.Exit(2)
 	}
 	cfg.file = fs.Arg(0)
+	resolvedConc, ok := cloneconcurrency.Resolve(*maxConcFlag)
+	if !ok {
+		fmt.Fprintf(os.Stderr, constants.ErrCloneMaxConcurrencyInvalid, *maxConcFlag)
+		os.Exit(2)
+	}
+	cfg.maxConcurrency = resolvedConc
 	validateCloneNowFlags(cfg)
 
 	return cfg
@@ -174,7 +190,19 @@ func runCloneNowExecute(plan clonenow.Plan, cfg cloneNowFlags) {
 	if cfg.output == constants.OutputTerminal {
 		hook = printCloneNowTermBlockRow
 	}
-	results := clonenow.ExecuteWithHooks(plan, cfg.cwd, progress, hook)
+	// Dispatch sequential vs parallel on the resolved worker count.
+	// Auto-default (NumCPU) lands here as N>=1 already (the parser
+	// runs cloneconcurrency.Resolve), so a single comparison is all
+	// that's needed. The concurrent runner short-circuits to
+	// ExecuteWithHooks for workers <=1 — keeping a single sequential
+	// code path under the hood.
+	var results []clonenow.Result
+	if cfg.maxConcurrency > 1 {
+		fmt.Fprintf(os.Stderr, constants.MsgCloneConcurrencyEnabledFmt, cfg.maxConcurrency)
+		results = clonenow.ExecuteWithHooksConcurrent(plan, cfg.cwd, progress, hook, cfg.maxConcurrency)
+	} else {
+		results = clonenow.ExecuteWithHooks(plan, cfg.cwd, progress, hook)
+	}
 	if err := clonenow.RenderSummary(os.Stdout, results); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
