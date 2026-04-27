@@ -35,6 +35,8 @@ type startupAddFlags struct {
 	noDisplay   bool
 	force       bool
 	backend     string
+	output      string
+	jsonIndent  int
 }
 
 // runStartupAdd is the dispatcher entry point. Windows is now
@@ -44,6 +46,10 @@ type startupAddFlags struct {
 func runStartupAdd(args []string) {
 	checkHelp("startup-add", args)
 	cfg := parseStartupAddFlags(args)
+	if err := validateStartupOutput(constants.CmdStartupAdd, cfg.output, cfg.jsonIndent); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(2)
+	}
 	exec, ok := resolveStartupAddExec(cfg.exec)
 	if !ok {
 		fmt.Fprintln(os.Stderr, constants.ErrStartupAddMissingExec)
@@ -64,6 +70,12 @@ func runStartupAdd(args []string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
+	}
+	if cfg.output == constants.OutputJSON {
+		_ = emitStartupStatus(cfg.output, cfg.jsonIndent,
+			addResultToStatus(cfg.name, cfg.force, res))
+
+		return
 	}
 	printAddResult(cfg.name, res)
 }
