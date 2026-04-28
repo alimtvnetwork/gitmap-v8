@@ -135,14 +135,6 @@ func equalStringSlices(a, b []string) bool {
 	return true
 }
 
-// stringSet is the tiny set helper used by the missing/unexpected
-// passes. Inline construction keeps the schema check zero-allocation
-// on the success path (Go maps with <8 entries fit in one bucket).
-func stringSet(xs []string) map[string]bool {
-	m := make(map[string]bool, len(xs))
-	for _, x := range xs {
-		m[x] = true
-	}
-
-	return m
-}
+// stringSet (former map-based set helper) was removed alongside the
+// per-object key-set assertions that used it. Re-introduce it next
+// to its first caller if a future helper needs O(1) membership.
