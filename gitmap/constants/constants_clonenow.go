@@ -104,7 +104,34 @@ const (
 	FlagDescCloneNowScanRoot = "Directory to auto-pickup the scan manifest from " +
 		"(probes <scan-root>/.gitmap/output/gitmap.{json,csv}). " +
 		"Defaults to the current directory. Ignored when --manifest or a positional <file> is given."
+	// FlagCloneNowYes bypasses the pre-flight existing-destinations
+	// confirmation prompt. The prompt only fires on --execute when
+	// at least one row's RelativePath already exists on disk; the
+	// per-row --on-exists policy still decides what actually happens
+	// to those existing dirs (skip / update / force). --yes is the
+	// scripting / CI escape hatch and is mandatory in non-TTY runs
+	// because there's no stdin to read a confirmation from.
+	FlagCloneNowYes     = "yes"
+	FlagDescCloneNowYes = "Skip the pre-flight confirmation when destination folders already exist " +
+		"(required for non-interactive / CI runs). The --on-exists policy still applies per row."
 )
+// CloneNowConfirmYes is the only stdin response that proceeds with
+// --execute when destinations already exist. Anything else (including
+// the empty default) aborts with exit code 2. Stable so shell
+// scripts piping `yes` keep working: `yes | gitmap reclone --execute`.
+const CloneNowConfirmYes = "y"
+
+// CloneNowExistingPreviewLimit caps how many existing destinations
+// are listed in the prompt to keep terminal output scannable. The
+// total count is always shown so the user knows the full impact.
+const CloneNowExistingPreviewLimit = 10
+
+// CloneNowExitConfirmAborted is the exit code used when the user
+// declines the prompt OR when --execute is passed in a non-TTY
+// context with existing destinations and no --yes. Distinct from
+// the per-row failure exit (1) so wrappers can tell "user said no"
+// apart from "git clone failed".
+const CloneNowExitConfirmAborted = 2
 
 // On-exists policy enum strings. Stable: surfaced in --on-exists,
 // the dry-run header, and the per-row Result.Detail field. Renaming
