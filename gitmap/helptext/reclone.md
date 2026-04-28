@@ -100,6 +100,7 @@ populated tree is impossible without explicit confirmation.
 | `--scan-root` | current dir | Directory whose `.gitmap/output/` is probed during auto-pickup. Lets you `reclone` a tree scanned elsewhere without `cd`. Ignored when `--manifest` or a positional `<file>` is given. |
 | `--execute` | off | Actually run `git clone`. Without this flag, only the dry-run plan is printed. |
 | `--yes` | off | Skip the pre-flight confirmation when destination folders already exist. **Required for non-interactive / CI runs** — without a TTY and without `--yes`, `reclone --execute` exits `2` rather than block on stdin. The `--on-exists` policy still applies per row. |
+| `--no-summary` | off | Suppress the pre-execute summary (totals + destination folder tree) printed before the safety prompt. Per-row results still print. |
 | `--quiet` | off | Suppress per-row progress lines. The end-of-batch summary still prints. |
 | `--mode` | `https` | URL mode to clone with: `https` or `ssh`. Falls back to the other mode if the preferred URL is missing on a row. |
 | `--format` | auto | Force input format: `json`, `csv`, or `text`. Default auto-detects from the file extension. |
