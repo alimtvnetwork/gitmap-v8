@@ -1856,7 +1856,7 @@ either mode.
 ]
 ```
 
-
+#### One-shot single repo (no scan file needed)
 
 ```bash
 # Clone a single URL — versioned URLs (e.g. -v13) auto-flatten to <base>/
