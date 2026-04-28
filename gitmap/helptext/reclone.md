@@ -47,7 +47,7 @@ path. Auto-pickup never walks parent directories.
 
 | Argument | Required | Description |
 |---|---|---|
-| `<file>` | yes | Path to a `.json`, `.csv`, or `.txt` file produced by `gitmap scan` (typically under `.gitmap/output/`). |
+| `<file>` | no | Path to a `.json`, `.csv`, or `.txt` file produced by `gitmap scan` (typically under `.gitmap/output/`). When omitted, auto-pickup is used (see above). |
 
 ## Flags
 
