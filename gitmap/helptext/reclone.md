@@ -23,6 +23,7 @@ gitmap reclone  <file>                                    # dry-run (default)
 gitmap reclone  <file> --execute                          # actually clone
 gitmap reclone  --manifest <path>                         # explicit manifest (JSON or CSV)
 gitmap reclone  --manifest <path> --execute               # explicit + execute
+gitmap reclone  --scan-root <dir> --execute               # auto-pickup from <dir>/.gitmap/output/
 gitmap reclone  --execute                                 # auto-pickup + execute
 gitmap reclone  <file> --mode ssh --execute               # use SSH URLs
 gitmap rec      <file> --execute                          # short alias
