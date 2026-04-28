@@ -8,8 +8,9 @@ behind.
 ## Synopsis
 
 ```
-gitmap audit-legacy [--patterns <csv>] [--path <dir>] [--json]
-gitmap al           [--patterns <csv>] [--path <dir>] [--json]
+gitmap audit-legacy [--patterns <csv>] [--path <dir>] [--json] [--report[=<file>]]
+gitmap audit         [--patterns <csv>] [--path <dir>] [--json] [--report[=<file>]]
+gitmap al            [--patterns <csv>] [--path <dir>] [--json] [--report[=<file>]]
 ```
 
 ## Defaults
@@ -17,6 +18,8 @@ gitmap al           [--patterns <csv>] [--path <dir>] [--json]
 - `--patterns` defaults to `gitmap-v[567]\b` — catches every old
   versioned-repo reference.
 - `--path` defaults to the current working directory.
+- `--report` without a value writes to `.gitmap/audit-legacy-report.md`.
+  Pass `--report=path/to/file.md` to override.
 - Skips `.git`, `node_modules`, `dist`, `build`, `bin`, `.next`,
   `.gitmap`, `vendor`, `coverage`, plus binary file extensions
   (images, archives, executables, fonts, sqlite).
