@@ -81,7 +81,8 @@ func writeAuditMDPatternCounts(b *strings.Builder, opts auditLegacyOpts, hits []
 func writeAuditMDFileCounts(b *strings.Builder, hits []auditLegacyHit, plans []auditDiffPlan) {
 	fmt.Fprintf(b, "## Counts by file\n\n")
 	if len(hits) == 0 {
-		fmt.Fprintln(b, "_None — repo is clean._\n")
+		fmt.Fprintln(b, "_None — repo is clean._")
+		fmt.Fprintln(b)
 
 		return
 	}
