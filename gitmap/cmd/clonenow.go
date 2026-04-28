@@ -83,6 +83,7 @@ func runCloneNow(args []string) {
 
 		return
 	}
+	confirmCloneNowExistingDestsOrExit(plan, cfg)
 	runCloneNowExecute(plan, cfg)
 	maybeExitOnCmdFaithfulMismatch()
 }
