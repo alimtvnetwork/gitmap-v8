@@ -111,9 +111,50 @@ public static class GitMapUninstallNative {
     Write-OK "Removed from PATH."
 }
 
+# --- Safety guards ---
+
+# Confirm-IsGitmapInstall verifies $binPath actually IS our gitmap
+# CLI before any destructive action. Mirrors the helper in
+# install.ps1 so both uninstall entry points share one contract.
+function Confirm-IsGitmapInstall([string]$binPath, [bool]$isForce) {
+    if (-not (Test-Path $binPath)) {
+        Write-Step "No binary at $binPath; skipping identity check."
+        return $true
+    }
+    try { $out = (& $binPath version 2>&1 | Out-String) } catch { $out = "" }
+    if ($out -match '(?i)\bgitmap\b') {
+        Write-OK "Verified gitmap binary at $binPath."
+        return $true
+    }
+    if ($isForce) {
+        Write-Step "Identity check failed but -Force set; continuing."
+        return $true
+    }
+    Write-Err "Refusing to uninstall: $binPath does not look like gitmap."
+    Write-Err "  Output: $($out.Trim())"
+    Write-Err "  Re-run with -Force to override, or pass the correct -InstallDir."
+    return $false
+}
+
+# Resolve-DataChoice returns 'keep' or 'purge'. Same precedence as
+# install.ps1: explicit flags > -Force (keep) > non-interactive (keep)
+# > interactive prompt.
+function Resolve-DataChoice([string]$dataDir, [bool]$isKeep, [bool]$isPurge, [bool]$isForce) {
+    if (-not (Test-Path $dataDir)) { return 'keep' }
+    if ($isPurge) { return 'purge' }
+    if ($isKeep) { return 'keep' }
+    if ($isForce) { return 'keep' }
+    if (-not [Environment]::UserInteractive) { return 'keep' }
+    Write-Host ""
+    Write-Host ("  Data folder found: {0}" -f $dataDir) -ForegroundColor Yellow
+    $reply = Read-Host "  Delete user data too? [y/N]"
+    if ($reply -match '^(y|yes)$') { return 'purge' }
+    return 'keep'
+}
+
 # --- Remove files ---
 
-function Remove-InstallDir([string]$dir) {
+function Remove-InstallDir([string]$dir, [string]$dataChoice) {
     if (-not (Test-Path $dir)) {
         Write-Err "Install directory not found: $dir"
         return $false
@@ -125,7 +166,16 @@ function Remove-InstallDir([string]$dir) {
         Write-OK "Removed $BinaryName"
     }
 
-    # Remove remaining files (data, old binaries, etc.)
+    $dataDir = Join-Path $dir "data"
+    if ($dataChoice -eq 'purge' -and (Test-Path $dataDir)) {
+        Remove-Item $dataDir -Recurse -Force -ErrorAction SilentlyContinue
+        Write-OK "Removed data folder: $dataDir"
+    }
+    elseif (Test-Path $dataDir) {
+        Write-Step "Kept data folder: $dataDir"
+    }
+
+    # Remove remaining files (old binaries, etc.) iff the dir is empty.
     $remaining = Get-ChildItem -Path $dir -Force -ErrorAction SilentlyContinue
     if ($remaining.Count -eq 0) {
         Remove-Item $dir -Force
@@ -147,10 +197,19 @@ function Main {
     Write-Host ""
 
     $resolvedDir = Resolve-InstallDir $InstallDir
+    $binPath = Join-Path $resolvedDir $BinaryName
+    $dataDir = Join-Path $resolvedDir "data"
 
     Write-Step "Uninstalling from $resolvedDir..."
 
-    $removed = Remove-InstallDir $resolvedDir
+    if (-not (Confirm-IsGitmapInstall $binPath $Force.IsPresent)) {
+        Write-Host ""
+        return
+    }
+
+    $dataChoice = Resolve-DataChoice $dataDir $KeepData.IsPresent $PurgeData.IsPresent $Force.IsPresent
+
+    $removed = Remove-InstallDir $resolvedDir $dataChoice
     Remove-FromPath $resolvedDir
 
     Write-Host ""
@@ -164,3 +223,4 @@ function Main {
 }
 
 Main
+
