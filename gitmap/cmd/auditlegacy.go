@@ -106,7 +106,7 @@ func scanAuditLegacy(opts auditLegacyOpts) ([]auditLegacyHit, int, error) {
 			return nil
 		}
 		fileCount++
-		fileHits := scanAuditFile(path, opts.Patterns)
+		fileHits := scanAuditLegacyFile(path, opts.Patterns)
 		hits = append(hits, fileHits...)
 
 		return nil
@@ -141,8 +141,8 @@ func isAuditScannable(path string) bool {
 	return true
 }
 
-// scanAuditFile reads one file and returns all matches.
-func scanAuditFile(path string, pats []*regexp.Regexp) []auditLegacyHit {
+// scanAuditLegacyFile reads one file and returns all matches.
+func scanAuditLegacyFile(path string, pats []*regexp.Regexp) []auditLegacyHit {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil
