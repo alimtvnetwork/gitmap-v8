@@ -361,12 +361,6 @@ const (
 	// inspecting the file in a spreadsheet sees as "row 2"). %v =
 	// underlying csv.Reader error.
 	ErrCloneNowCSVRowRead = "clone-now: CSV data row %d failed to parse: %v"
-	// %d = 1-based data row number, %d = column count seen, %d =
-	// header column count expected. Emitted when a data row's column
-	// count diverges from the header so users can find the offending
-	// row instead of getting a vague "wrong field count" from csv.
-	ErrCloneNowCSVRowFieldCount = "clone-now: CSV data row %d has %d columns, " +
-		"header has %d"
 	// %d = 1-based data row number. Emitted when a CSV data row has
 	// neither httpsUrl nor sshUrl set to a non-empty value.
 	ErrCloneNowCSVRowMissingURL = "clone-now: CSV data row %d has neither httpsUrl nor sshUrl set"
