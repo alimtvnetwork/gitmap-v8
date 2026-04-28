@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"io/fs"
 	"os"
@@ -26,10 +25,11 @@ type auditLegacyHit struct {
 
 // auditLegacyOpts holds parsed CLI flags.
 type auditLegacyOpts struct {
-	Patterns []*regexp.Regexp
-	Raw      []string
-	Root     string
-	AsJSON   bool
+	Patterns   []*regexp.Regexp
+	Raw        []string
+	Root       string
+	AsJSON     bool
+	ReportPath string // empty = no report file written
 }
 
 // runAuditLegacy is the dispatch entry point.
@@ -46,59 +46,13 @@ func runAuditLegacy(args []string) {
 		os.Exit(2)
 	}
 	emitAuditLegacy(opts, hits, n)
+	writeAuditLegacyReport(opts, hits, n)
 	if len(hits) > 0 {
 		os.Exit(1)
 	}
 }
 
-// parseAuditLegacyArgs parses flags into an options struct.
-func parseAuditLegacyArgs(args []string) (auditLegacyOpts, error) {
-	fs := flag.NewFlagSet(constants.CmdAuditLegacy, flag.ContinueOnError)
-	pats := fs.String(constants.FlagAuditLegacyPatterns,
-		constants.DefaultAuditLegacyPatterns, constants.FlagDescAuditLegacyPatterns)
-	root := fs.String(constants.FlagAuditLegacyPath, ".", constants.FlagDescAuditLegacyPath)
-	asJSON := fs.Bool(constants.FlagAuditLegacyJSON, false, constants.FlagDescAuditLegacyJSON)
-	if err := fs.Parse(args); err != nil {
-		return auditLegacyOpts{}, err
-	}
-	compiled, raw, err := compileAuditPatterns(*pats)
-	if err != nil {
-		return auditLegacyOpts{}, err
-	}
-
-	return auditLegacyOpts{Patterns: compiled, Raw: raw, Root: *root, AsJSON: *asJSON}, nil
-}
-
-// compileAuditPatterns compiles a comma-separated pattern list.
-func compileAuditPatterns(csv string) ([]*regexp.Regexp, []string, error) {
-	parts := strings.Split(csv, ",")
-	out := make([]*regexp.Regexp, 0, len(parts))
-	raw := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		re, err := compileOnePattern(p)
-		if err != nil {
-			return nil, nil, err
-		}
-		out = append(out, re)
-		raw = append(raw, p)
-	}
-
-	return out, raw, nil
-}
-
-// compileOnePattern wraps regexp.Compile with a standardized error.
-func compileOnePattern(p string) (*regexp.Regexp, error) {
-	re, err := regexp.Compile(p)
-	if err != nil {
-		return nil, fmt.Errorf(constants.ErrAuditLegacyRegex, p, err)
-	}
-
-	return re, nil
-}
+// (parseAuditLegacyArgs and pattern helpers live in auditlegacy_parse.go)
 
 // scanAuditLegacy walks the root and returns hits + scanned-file count.
 func scanAuditLegacy(opts auditLegacyOpts) ([]auditLegacyHit, int, error) {

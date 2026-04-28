@@ -66,7 +66,7 @@ func toolingDispatchEntries() []dispatchEntry {
 		{[]string{constants.CmdReplace, constants.CmdReplaceAlias}, func() { runReplace(argsTail()) }},
 		{[]string{constants.CmdRegoldens, constants.CmdRegoldensAlias}, func() { runRegoldens(argsTail()) }},
 		{
-			[]string{constants.CmdAuditLegacy, constants.CmdAuditLegacyAlias},
+			[]string{constants.CmdAuditLegacy, constants.CmdAuditLegacyAlias, constants.CmdAuditLegacyAlias2},
 			func() { runAuditLegacy(argsTail()) },
 		},
 	}
