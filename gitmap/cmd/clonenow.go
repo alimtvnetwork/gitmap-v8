@@ -104,21 +104,13 @@ func parseCloneNowFlags(args []string) cloneNowFlags {
 		constants.FlagDescCloneVerifyCmdFaithfulExitOnMismatch)
 	fs.BoolVar(&cfg.printCloneArgv, constants.FlagClonePrintArgv,
 		false, constants.FlagDescClonePrintArgv)
+	fs.StringVar(&cfg.manifest, constants.FlagCloneNowManifest, "",
+		constants.FlagDescCloneNowManifest)
 	maxConcFlag := fs.Int(constants.CloneFlagMaxConcurrency,
 		constants.CloneDefaultMaxConcurrency, constants.FlagDescCloneMaxConcurrency)
 	reordered := reorderFlagsBeforeArgs(args)
 	fs.Parse(reordered)
-	if fs.NArg() < 1 {
-		picked, ok := autoPickupRecloneManifest()
-		if !ok {
-			fmt.Fprintln(os.Stderr, constants.MsgCloneNowMissingArg)
-			os.Exit(2)
-		}
-		fmt.Fprintf(os.Stderr, constants.MsgCloneNowAutoPickup, picked)
-		cfg.file = picked
-	} else {
-		cfg.file = fs.Arg(0)
-	}
+	cfg.file = resolveCloneNowSource(fs, cfg.manifest)
 	resolvedConc, ok := cloneconcurrency.Resolve(*maxConcFlag)
 	if !ok {
 		fmt.Fprintf(os.Stderr, constants.ErrCloneMaxConcurrencyInvalid, *maxConcFlag)
