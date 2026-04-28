@@ -128,6 +128,8 @@ func parseCloneNowFlags(args []string) cloneNowFlags {
 		constants.FlagDescCloneNowScanRoot)
 	fs.BoolVar(&cfg.assumeYes, constants.FlagCloneNowYes, false,
 		constants.FlagDescCloneNowYes)
+	fs.BoolVar(&cfg.noSummary, constants.FlagCloneNowNoSummary, false,
+		constants.FlagDescCloneNowNoSummary)
 	maxConcFlag := fs.Int(constants.CloneFlagMaxConcurrency,
 		constants.CloneDefaultMaxConcurrency, constants.FlagDescCloneMaxConcurrency)
 	reordered := reorderFlagsBeforeArgs(args)
