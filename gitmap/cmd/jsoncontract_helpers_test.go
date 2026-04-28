@@ -81,18 +81,10 @@ func mustWriteGolden(t *testing.T, path string, got []byte) {
 		"GITMAP_UPDATE_GOLDEN to confirm", path)
 }
 
-// assertObjectKeyOrder parses `raw` as a JSON object (or as the
-// first object inside a top-level array — common for our list
-// outputs) and asserts the top-level keys appear in EXACTLY the
-// expected order. Goes through json.Decoder.Token() so the actual
-// on-the-wire ordering is checked, not a map-shuffled view of it.
-func assertObjectKeyOrder(t *testing.T, raw []byte, want []string) {
-	t.Helper()
-	got := readFirstObjectKeys(t, raw)
-	if !equalStringSlices(got, want) {
-		t.Fatalf("top-level key order drift\n  want: %v\n  got:  %v", want, got)
-	}
-}
+// assertObjectKeyOrder used to live here; removed once no test
+// referenced it. Snapshot suites pin shape via assertGoldenBytes
+// instead. Re-introduce alongside its first caller if structural-
+// only ordering checks are needed again.
 
 // readFirstObjectKeys streams tokens from `raw` and returns the keys
 // of the first top-level object encountered. Handles both shapes:
