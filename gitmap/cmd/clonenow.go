@@ -36,6 +36,12 @@ type cloneNowFlags struct {
 	// "both provided" conflict and exit 2 with a clear message
 	// instead of silently picking one.
 	manifest string
+	// scanRoot redirects auto-pickup to probe a custom root's
+	// `.gitmap/output/` instead of the process CWD. Empty means
+	// "use CWD" — the original behavior. Ignored when manifest or
+	// the positional file is supplied; --scan-root only steers the
+	// auto-pickup branch so the CLI never has competing roots.
+	scanRoot string
 	execute  bool
 	quiet    bool
 	mode     string
@@ -106,11 +112,13 @@ func parseCloneNowFlags(args []string) cloneNowFlags {
 		false, constants.FlagDescClonePrintArgv)
 	fs.StringVar(&cfg.manifest, constants.FlagCloneNowManifest, "",
 		constants.FlagDescCloneNowManifest)
+	fs.StringVar(&cfg.scanRoot, constants.FlagCloneNowScanRoot, "",
+		constants.FlagDescCloneNowScanRoot)
 	maxConcFlag := fs.Int(constants.CloneFlagMaxConcurrency,
 		constants.CloneDefaultMaxConcurrency, constants.FlagDescCloneMaxConcurrency)
 	reordered := reorderFlagsBeforeArgs(args)
 	fs.Parse(reordered)
-	cfg.file = resolveCloneNowSource(fs, cfg.manifest)
+	cfg.file = resolveCloneNowSource(fs, cfg.manifest, cfg.scanRoot)
 	resolvedConc, ok := cloneconcurrency.Resolve(*maxConcFlag)
 	if !ok {
 		fmt.Fprintf(os.Stderr, constants.ErrCloneMaxConcurrencyInvalid, *maxConcFlag)

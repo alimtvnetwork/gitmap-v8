@@ -23,6 +23,7 @@ gitmap reclone  <file>                                    # dry-run (default)
 gitmap reclone  <file> --execute                          # actually clone
 gitmap reclone  --manifest <path>                         # explicit manifest (JSON or CSV)
 gitmap reclone  --manifest <path> --execute               # explicit + execute
+gitmap reclone  --scan-root <dir> --execute               # auto-pickup from <dir>/.gitmap/output/
 gitmap reclone  --execute                                 # auto-pickup + execute
 gitmap reclone  <file> --mode ssh --execute               # use SSH URLs
 gitmap rec      <file> --execute                          # short alias
@@ -39,25 +40,30 @@ gitmap rc       <file> --execute                          # legacy short alias
 1. `--manifest <path>`  — explicit, highest priority. JSON or CSV;
    format is auto-detected from the extension (override with `--format`).
 2. Positional `<file>`  — legacy form, kept for back-compat.
-3. Auto-pickup          — searches `./.gitmap/output/gitmap.json` then
-   `./.gitmap/output/gitmap.csv` relative to the current directory.
+3. Auto-pickup          — searches `<root>/.gitmap/output/gitmap.json`
+   then `<root>/.gitmap/output/gitmap.csv`. `<root>` defaults to the
+   current directory and can be redirected with `--scan-root <dir>`.
 
 Passing **both** `--manifest` and a positional `<file>` is a usage error
-(exit `2`) so the chosen artifact is unambiguous.
+(exit `2`) so the chosen artifact is unambiguous. `--scan-root` is only
+consulted by the auto-pickup branch — it is silently ignored when an
+explicit path is supplied.
 
 
 ## Auto-pickup
 
-When `<file>` is omitted, `reclone` looks for a scan artifact in the
-conventional location relative to the current directory:
+When `<file>` and `--manifest` are both omitted, `reclone` looks for
+a scan artifact under:
 
-1. `./.gitmap/output/gitmap.json`  (preferred — richest schema)
-2. `./.gitmap/output/gitmap.csv`   (fallback)
+1. `<scan-root>/.gitmap/output/gitmap.json`  (preferred — richest schema)
+2. `<scan-root>/.gitmap/output/gitmap.csv`   (fallback)
 
-The first match is used and its path is echoed to stderr so the run
-stays reproducible. If neither file exists, `reclone` exits with code
-`2` and tells you to run `gitmap scan` first or pass an explicit
-path. Auto-pickup never walks parent directories.
+`<scan-root>` is the current directory by default, or the value of
+`--scan-root <dir>` when supplied. The first match is used and its
+path is echoed to stderr so the run stays reproducible. If neither
+file exists, `reclone` exits with code `2` and tells you to run
+`gitmap scan` first (or pass `--manifest` / a positional path).
+Auto-pickup never walks parent or sibling directories.
 
 ## Arguments
 
@@ -70,6 +76,7 @@ path. Auto-pickup never walks parent directories.
 | Flag | Default | Description |
 |---|---|---|
 | `--manifest` | (none) | Explicit path to the scan artifact (`.json` or `.csv`). Equivalent to the positional `<file>` argument; cannot be combined with one. |
+| `--scan-root` | current dir | Directory whose `.gitmap/output/` is probed during auto-pickup. Lets you `reclone` a tree scanned elsewhere without `cd`. Ignored when `--manifest` or a positional `<file>` is given. |
 | `--execute` | off | Actually run `git clone`. Without this flag, only the dry-run plan is printed. |
 | `--quiet` | off | Suppress per-row progress lines. The end-of-batch summary still prints. |
 | `--mode` | `https` | URL mode to clone with: `https` or `ssh`. Falls back to the other mode if the preferred URL is missing on a row. |

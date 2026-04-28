@@ -94,6 +94,16 @@ const (
 	FlagDescCloneNowManifest = "Path to a scan artifact (JSON or CSV) to consume. " +
 		"Format auto-detected from the extension. Equivalent to the positional " +
 		"<file> argument; when omitted, auto-pickup under ./.gitmap/output/ is used."
+	// FlagCloneNowScanRoot redirects auto-pickup to probe
+	// `<scan-root>/.gitmap/output/` instead of `./.gitmap/output/`.
+	// Useful when running `reclone` from a different directory than
+	// the one originally scanned (e.g. CI scripts, scheduled jobs).
+	// Ignored when --manifest or a positional <file> is supplied
+	// (those are explicit paths and don't need a root to resolve).
+	FlagCloneNowScanRoot     = "scan-root"
+	FlagDescCloneNowScanRoot = "Directory to auto-pickup the scan manifest from " +
+		"(probes <scan-root>/.gitmap/output/gitmap.{json,csv}). " +
+		"Defaults to the current directory. Ignored when --manifest or a positional <file> is given."
 )
 
 // On-exists policy enum strings. Stable: surfaced in --on-exists,
@@ -149,6 +159,13 @@ const (
 		"(looked for gitmap.json then gitmap.csv). " +
 		"Run `gitmap scan` first, or pass an explicit path " +
 		"(e.g. reclone .gitmap/output/gitmap.json)."
+	// %s = scan-root value. Variant of MsgCloneNowMissingArg used
+	// when the user explicitly requested auto-pickup from a custom
+	// root via --scan-root and that root yielded no artifact —
+	// echoing the path back makes the typo / wrong-dir case obvious.
+	MsgCloneNowMissingArgScanRoot = "reclone: no scan artifact was found under " +
+		"%s/.gitmap/output/ (looked for gitmap.json then gitmap.csv). " +
+		"Run `gitmap scan` against that root first, or pass --manifest / a positional <file>."
 	// %s = auto-discovered manifest path. Printed to stderr when
 	// reclone is invoked with no <file> arg and a scan artifact is
 	// found in the conventional location. Lets users see exactly
