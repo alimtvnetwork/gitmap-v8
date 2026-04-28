@@ -50,6 +50,9 @@ gitmap al --json > legacy-report.json
 
 # Scope the scan to a subtree
 gitmap audit-legacy --path ./src
+
+# Full audit + per-file unified diffs as downloadable artifacts
+gitmap audit --report --diffs
 ```
 
 ## CI usage
