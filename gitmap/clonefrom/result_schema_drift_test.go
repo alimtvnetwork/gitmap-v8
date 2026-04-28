@@ -217,6 +217,3 @@ func assertType(t *testing.T, name string, got, want any) {
 			name, reflect.TypeOf(got), reflect.TypeOf(want))
 	}
 }
-
-// silence unused-import warnings if the file is ever trimmed.
-var _ = strings.Join
