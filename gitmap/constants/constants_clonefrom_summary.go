@@ -47,6 +47,15 @@ const CloneFromTermSummaryReportFmt = "  report %s: %s\n"
 // rows so the summary shape stays predictable for log scrapers.
 const CloneFromTermSummaryReportNone = "  report:   (skipped — --no-report or write failed)\n"
 
+// CloneFromSummaryTransportFmt is the one-line transport split shared
+// by both the legacy RenderSummary and the enriched terminal block.
+// SSH = ssh:// + scp-style; HTTPS = https://; OTHER folds http://,
+// git://, file://, and unrecognised forms so the line stays at three
+// stable columns regardless of manifest contents. Derived from
+// ClassifyScheme so this counter and the per-scheme tally can never
+// disagree. %d ssh, %d https, %d other.
+const CloneFromSummaryTransportFmt = "transport: %d ssh, %d https, %d other\n"
+
 // URL scheme labels — surfaced in the per-mode tally. Stable strings:
 // renaming would break any downstream tooling that greps the
 // terminal summary. "scp" covers the `[user@]host:path` form that
