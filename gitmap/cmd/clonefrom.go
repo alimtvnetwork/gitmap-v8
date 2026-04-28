@@ -35,16 +35,14 @@ type cloneFromFlags struct {
 	execute  bool
 	quiet    bool
 	noReport bool
-	// output selects the per-row presentation: "" / "default" keep
-	// the legacy 4-line block; "terminal" renders the standardized
-	// branch/from/to/command block shared with scan, clone-next, probe.
-	output string
-	// checkout sets the GLOBAL default checkout mode. Empty string
-	// → falls back to constants.CloneFromCheckoutDefault. Per-row
-	// `checkout` field always wins. Validated up-front so a typo
-	// fails before any clone runs.
-	checkout string
-	// verifyCmdFaithful enables the dry-run argv-vs-displayed checker.
+	// emitSchema, when non-empty, short-circuits the command: the
+	// requested JSON Schema (kind = "report" | "input") is written
+	// to stdout and the process exits 0. No <file> argument is
+	// required in this mode — useful for CI tooling that wants to
+	// validate exported manifests without running a clone first.
+	emitSchema        string
+	output            string
+	checkout          string
 	verifyCmdFaithful bool
 	// verifyCmdFaithfulExitOnMismatch upgrades the verifier into a
 	// hard failure: any divergence sets a sticky bit and the run tail
