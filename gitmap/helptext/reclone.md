@@ -18,17 +18,33 @@ selected SSH/HTTPS mode.
 ## Synopsis
 
 ```
-gitmap reclone                                    # auto-pickup .gitmap/output/gitmap.json (then .csv)
-gitmap reclone  <file>                            # dry-run (default)
-gitmap reclone  <file> --execute                  # actually clone
-gitmap reclone  --execute                         # auto-pickup + execute
-gitmap reclone  <file> --mode ssh --execute       # use SSH URLs
-gitmap rec      <file> --execute                  # short alias
-gitmap clone-now <file> --execute                 # legacy alias (kept forever)
-gitmap cnow     <file> --execute                  # legacy short alias
-gitmap relclone <file> --execute                  # legacy alias
-gitmap rc       <file> --execute                  # legacy short alias
+gitmap reclone                                            # auto-pickup .gitmap/output/gitmap.json (then .csv)
+gitmap reclone  <file>                                    # dry-run (default)
+gitmap reclone  <file> --execute                          # actually clone
+gitmap reclone  --manifest <path>                         # explicit manifest (JSON or CSV)
+gitmap reclone  --manifest <path> --execute               # explicit + execute
+gitmap reclone  --execute                                 # auto-pickup + execute
+gitmap reclone  <file> --mode ssh --execute               # use SSH URLs
+gitmap rec      <file> --execute                          # short alias
+gitmap clone-now <file> --execute                         # legacy alias (kept forever)
+gitmap cnow     <file> --execute                          # legacy short alias
+gitmap relclone <file> --execute                          # legacy alias
+gitmap rc       <file> --execute                          # legacy short alias
 ```
+
+## Source resolution
+
+`reclone` picks the input file in this priority order:
+
+1. `--manifest <path>`  — explicit, highest priority. JSON or CSV;
+   format is auto-detected from the extension (override with `--format`).
+2. Positional `<file>`  — legacy form, kept for back-compat.
+3. Auto-pickup          — searches `./.gitmap/output/gitmap.json` then
+   `./.gitmap/output/gitmap.csv` relative to the current directory.
+
+Passing **both** `--manifest` and a positional `<file>` is a usage error
+(exit `2`) so the chosen artifact is unambiguous.
+
 
 ## Auto-pickup
 
@@ -53,6 +69,7 @@ path. Auto-pickup never walks parent directories.
 
 | Flag | Default | Description |
 |---|---|---|
+| `--manifest` | (none) | Explicit path to the scan artifact (`.json` or `.csv`). Equivalent to the positional `<file>` argument; cannot be combined with one. |
 | `--execute` | off | Actually run `git clone`. Without this flag, only the dry-run plan is printed. |
 | `--quiet` | off | Suppress per-row progress lines. The end-of-batch summary still prints. |
 | `--mode` | `https` | URL mode to clone with: `https` or `ssh`. Falls back to the other mode if the preferred URL is missing on a row. |

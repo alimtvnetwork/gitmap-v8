@@ -81,6 +81,19 @@ const (
 		"'skip' (default, no-op when repo+branch match), " +
 		"'update' (fetch + checkout to align with the planned URL/branch), " +
 		"'force' (remove target and re-clone -- destructive)."
+	// FlagCloneNowManifest is the unified, explicit-path alias for the
+	// positional <file> argument. Accepts a JSON or CSV produced by
+	// `gitmap scan`; format is auto-detected from the extension (use
+	// --format to override). Precedence:
+	//   1. --manifest <path>     (explicit, highest priority)
+	//   2. positional <file>     (legacy positional form)
+	//   3. auto-pickup           (./.gitmap/output/gitmap.{json,csv})
+	// Passing BOTH --manifest and a positional file is a usage error
+	// (exit 2) so the run is unambiguous.
+	FlagCloneNowManifest     = "manifest"
+	FlagDescCloneNowManifest = "Path to a scan artifact (JSON or CSV) to consume. " +
+		"Format auto-detected from the extension. Equivalent to the positional " +
+		"<file> argument; when omitted, auto-pickup under ./.gitmap/output/ is used."
 )
 
 // On-exists policy enum strings. Stable: surfaced in --on-exists,
@@ -141,6 +154,10 @@ const (
 	// found in the conventional location. Lets users see exactly
 	// which file fed the run instead of guessing.
 	MsgCloneNowAutoPickup = "reclone: using scan artifact %s (auto-discovered; pass an explicit path to override)\n"
+	// %s = positional file, %s = --manifest value. Printed when the
+	// caller supplies BOTH forms — refusing is safer than silently
+	// preferring one and having the run consume the wrong artifact.
+	MsgCloneNowManifestConflict = "reclone: cannot combine positional <file> %q with --manifest %q; pass only one\n"
 	MsgCloneNowNoURL = "no url for selected mode"
 	// Idempotency / re-clone messages. Each lands in Result.Detail
 	// so the per-row summary tells the user exactly which branch
